@@ -1171,6 +1171,12 @@ if (!$GLOBALS['disable_calendar'] && acl_check('patients', 'appt')) {
 if (!$GLOBALS['disable_pat_trkr'] && !$GLOBALS['disable_calendar'] && acl_check('patients', 'appt')) {
     genTreeLink('RTop', 'pfb', xl('Flow Board'));
 }
+#dh added workflow link here, copying patient tracker code
+
+if (!$GLOBALS['disable_wf_trkr'] && !$GLOBALS['disable_calendar'] && acl_check('patients', 'appt')) {
+    genTreeLink('RTop', 'wfb', xl('Work Flow Board'));
+}
+
 if (!$GLOBALS['disable_rcb'] && !$GLOBALS['disable_calendar'] && acl_check('patients', 'appt')) {
     genTreeLink('RBot', 'rcb', xl('Recall Board'));
 }

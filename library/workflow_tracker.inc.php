@@ -2,8 +2,8 @@
 /**
 * library/patient_tracker.inc.php Functions used in the Patient Flow Board.
 *
-* Functions for use in the Patient Flow Board and Patient Flow Board Reports.
-*
+* Functions for use in the Work Flow Board and Work Flow Board Reports.
+*  BASED on Patient Flow Board
 *
 * Copyright (C) 2015 Terry Hill <terry@lillysystems.com>
 *

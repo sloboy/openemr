@@ -19,19 +19,19 @@ require_once("../globals.php");
 require_once("$srcdir/options.inc.php");
 require_once("$srcdir/forms.inc");
 require_once("$srcdir/encounter_events.inc.php");
-require_once("$srcdir/patient_tracker.inc.php");
+require_once("$srcdir/workflow_tracker.inc.php");
 
 use OpenEMR\Core\Header;
 
 # Get the information for fields
 $tracker_id = $_GET['tracker_id'];
-$trow = sqlQuery("SELECT apptdate, appttime, patient_tracker_element.room AS lastroom, " .
-                        "patient_tracker_element.status AS laststatus, eid, random_drug_test, encounter, pid " .
-                        "FROM patient_tracker " .
-                        "LEFT JOIN patient_tracker_element " .
-                        "ON patient_tracker.id = patient_tracker_element.pt_tracker_id " .
-                        "AND patient_tracker.lastseq = patient_tracker_element.seq " .
-                        "WHERE patient_tracker.id =?", array($_GET['tracker_id']));
+$trow = sqlQuery("SELECT apptdate, appttime, workflow_tracker_element.room AS lastroom, " .
+                        "workflow_tracker_element.status AS laststatus, eid, random_drug_test, encounter, pid " .
+                        "FROM workflow_tracker " .
+                        "LEFT JOIN workflow_tracker_element " .
+                        "ON workflow_tracker.id = workflow_tracker_element.pt_tracker_id " .
+                        "AND workflow_tracker.lastseq = workflow_tracker_element.seq " .
+                        "WHERE workflow_tracker.id =?", array($_GET['tracker_id']));
 
 $tkpid = $trow['pid'];
 $appttime = $trow['appttime'];
@@ -90,7 +90,7 @@ $row = sqlQuery("select fname, lname " .
                 <h2><?php echo xlt('Change Status for'). " " . text($row['fname']) . " " . text($row['lname']); ?></h2>
             </div>
         </div>
-        <form id="form_note" method="post" action="patient_tracker_status.php?tracker_id=<?php echo attr($tracker_id) ?>" enctype="multipart/form-data" >
+        <form id="form_note" method="post" action="workflow_tracker_status.php?tracker_id=<?php echo attr($tracker_id) ?>" enctype="multipart/form-data" >
             <div class="form-group">
                 <label for="statustype"><?php echo xlt('Status Type'); ?></label>
                 <?php echo generate_select_list('statustype', 'apptstat', $trow['laststatus'], xl('Status Type')); ?>

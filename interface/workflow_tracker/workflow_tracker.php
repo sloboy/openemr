@@ -19,7 +19,7 @@
 require_once "../globals.php";
 require_once "$srcdir/patient.inc";
 require_once "$srcdir/options.inc.php";
-require_once "$srcdir/patient_tracker.inc.php";
+require_once "$srcdir/workflow_tracker.inc.php";
 require_once "$srcdir/user.inc";
 require_once "$srcdir/MedEx/API.php";
 
@@ -71,7 +71,7 @@ $form_patient_id = !is_null($_POST['form_patient_id']) ? $_POST['form_patient_id
 // get all appts for date range and refine view client side.  very fast...
 $appointments = array();
 $datetime = date("Y-m-d H:i:s");
-$appointments = fetch_Patient_Tracker_Events($from_date, $to_date, '', '', '', '', $form_patient_name, $form_patient_id);
+$appointments = fetch_Workflow_tracker_Events($from_date, $to_date, '', '', '', '', $form_patient_name, $form_patient_id);
 $appointments = sortAppointments($appointments, 'date', 'time');
 //grouping of the count of every status
 $appointments_status = getApptStatus($appointments);
@@ -930,7 +930,7 @@ if ($appointment['room'] > '') {
 
                                     function toggleSelectors() {
                                         if ($("#flb_selectors").css('display') === 'none') {
-                                            $.post("<?php echo $GLOBALS['webroot'] . "/interface/patient_tracker/patient_tracker.php"; ?>", {
+                                            $.post("<?php echo $GLOBALS['webroot'] . "/interface/workflow_tracker/workflow_tracker.php"; ?>", {
                                                 'setting_selectors': 'block',
                                                 success: function (data) {
 
@@ -939,7 +939,7 @@ if ($appointment['room'] > '') {
                                                 }
                                             });
                                         } else {
-                                            $.post("<?php echo $GLOBALS['webroot'] . "/interface/patient_tracker/patient_tracker.php"; ?>", {
+                                            $.post("<?php echo $GLOBALS['webroot'] . "/interface/workflow_tracker/workflow_tracker.php"; ?>", {
                                                 'setting_selectors': 'none',
                                                 success: function (data) {
                                                     $("#flb_selectors").slideToggle();
@@ -955,7 +955,7 @@ if ($appointment['room'] > '') {
                                      */
                                     function refreshMe() {
                                         top.restoreSession();
-                                        var posting = $.post('../patient_tracker/patient_tracker.php', {
+                                        var posting = $.post('../workflow_tracker/workflow_tracker.php', {
                                             flb_table: '1',
                                             form_from_date: $("#form_from_date").val(),
                                             form_to_date: $("#form_to_date").val(),
@@ -1021,7 +1021,7 @@ if ($appointment['room'] > '') {
                                     // popup for patient tracker status
                                     function bpopup(tkid) {
                                         top.restoreSession();
-                                        dlgopen('../patient_tracker/patient_tracker_status.php?tracker_id=' + tkid, '_blank', 500, 250);
+                                        dlgopen('../workflow_tracker/workflow_tracker_status.php?tracker_id=' + tkid, '_blank', 500, 250);
                                         return false;
                                     }
 

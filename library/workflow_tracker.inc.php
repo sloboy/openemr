@@ -27,104 +27,104 @@
 */
 require_once(dirname(__FILE__) . '/appointments.inc.php');
 
-function get_Tracker_Time_Interval($tracker_from_time, $tracker_to_time, $allow_sec = false)
-{
+// function get_Tracker_Time_Interval($tracker_from_time, $tracker_to_time, $allow_sec = false)
+// {
 
-    $tracker_time_calc = strtotime($tracker_to_time) - strtotime($tracker_from_time);
+//     $tracker_time_calc = strtotime($tracker_to_time) - strtotime($tracker_from_time);
 
-    $tracker_time = "";
-    if ($tracker_time_calc > 60*60*24) {
-        $days = floor($tracker_time_calc/60/60/24);
-        if ($days >= 2) {
-            $tracker_time .=  "$days ". xl('days');
-        } else {
-            $tracker_time .=  "$days ". xl('day');
-        }
+//     $tracker_time = "";
+//     if ($tracker_time_calc > 60*60*24) {
+//         $days = floor($tracker_time_calc/60/60/24);
+//         if ($days >= 2) {
+//             $tracker_time .=  "$days ". xl('days');
+//         } else {
+//             $tracker_time .=  "$days ". xl('day');
+//         }
 
-        $tracker_time_calc = $tracker_time_calc - ($days * (60*60*24));
-    }
+//         $tracker_time_calc = $tracker_time_calc - ($days * (60*60*24));
+//     }
 
-    if ($tracker_time_calc > 60*60) {
-        $hours = floor($tracker_time_calc/60/60);
-        if (strlen($days != 0)) {
-            if ($hours >= 2) {
-                 $tracker_time .=  ", $hours " . xl('hours');
-            } else {
-                 $tracker_time .=  ", $hours " . xl('hour');
-            }
-        } else {
-            if ($hours >= 2) {
-                 $tracker_time .=  "$hours " . xl('hours');
-            } else {
-                 $tracker_time .=  "$hours " . xl('hour');
-            }
-        }
+//     if ($tracker_time_calc > 60*60) {
+//         $hours = floor($tracker_time_calc/60/60);
+//         if (strlen($days != 0)) {
+//             if ($hours >= 2) {
+//                  $tracker_time .=  ", $hours " . xl('hours');
+//             } else {
+//                  $tracker_time .=  ", $hours " . xl('hour');
+//             }
+//         } else {
+//             if ($hours >= 2) {
+//                  $tracker_time .=  "$hours " . xl('hours');
+//             } else {
+//                  $tracker_time .=  "$hours " . xl('hour');
+//             }
+//         }
 
-        $tracker_time_calc = $tracker_time_calc - ($hours * (60*60));
-    }
+//         $tracker_time_calc = $tracker_time_calc - ($hours * (60*60));
+//     }
 
-    if ($allow_sec) {
-        if ($tracker_time_calc > 60) {
-              $minutes = floor($tracker_time_calc/60);
-            if (strlen($hours != 0)) {
-                if ($minutes >= 2) {
-                    $tracker_time .=  ", $minutes " . xl('minutes');
-                } else {
-                    $tracker_time .=  ", $minutes " . xl('minute');
-                }
-            } else {
-                if ($minutes >= 2) {
-                    $tracker_time .=  "$minutes " . xl('minutes');
-                } else {
-                    $tracker_time .=  "$minutes " . xl('minute');
-                }
-            }
+//     if ($allow_sec) {
+//         if ($tracker_time_calc > 60) {
+//               $minutes = floor($tracker_time_calc/60);
+//             if (strlen($hours != 0)) {
+//                 if ($minutes >= 2) {
+//                     $tracker_time .=  ", $minutes " . xl('minutes');
+//                 } else {
+//                     $tracker_time .=  ", $minutes " . xl('minute');
+//                 }
+//             } else {
+//                 if ($minutes >= 2) {
+//                     $tracker_time .=  "$minutes " . xl('minutes');
+//                 } else {
+//                     $tracker_time .=  "$minutes " . xl('minute');
+//                 }
+//             }
 
-              $tracker_time_calc = $tracker_time_calc - ($minutes * 60);
-        }
-    } else {
-        $minutes = round($tracker_time_calc/60);
-        if (strlen($hours != 0)) {
-            if ($minutes >= 2) {
-                $tracker_time .=  ", $minutes " . xl('minutes');
-            } else {
-                $tracker_time .=  ", $minutes " . xl('minute');
-            }
-        } else {
-            if ($minutes >= 2) {
-                $tracker_time .=  "$minutes " . xl('minutes');
-            } else {
-                if ($minutes > 0) {
-                    $tracker_time .=  "$minutes " . xl('minute');
-                }
-            }
-        }
+//               $tracker_time_calc = $tracker_time_calc - ($minutes * 60);
+//         }
+//     } else {
+//         $minutes = round($tracker_time_calc/60);
+//         if (strlen($hours != 0)) {
+//             if ($minutes >= 2) {
+//                 $tracker_time .=  ", $minutes " . xl('minutes');
+//             } else {
+//                 $tracker_time .=  ", $minutes " . xl('minute');
+//             }
+//         } else {
+//             if ($minutes >= 2) {
+//                 $tracker_time .=  "$minutes " . xl('minutes');
+//             } else {
+//                 if ($minutes > 0) {
+//                     $tracker_time .=  "$minutes " . xl('minute');
+//                 }
+//             }
+//         }
 
-        $tracker_time_calc = $tracker_time_calc - ($minutes * 60);
-    }
+//         $tracker_time_calc = $tracker_time_calc - ($minutes * 60);
+//     }
 
-    if ($allow_sec) {
-        if ($tracker_time_calc > 0) {
-            if (strlen($minutes != 0)) {
-                if ($tracker_time_calc >= 2) {
-                    $tracker_time .= ", $tracker_time_calc " . xl('seconds');
-                } else {
-                    $tracker_time .= ", $tracker_time_calc " . xl('second');
-                }
-            } else {
-                if ($tracker_time_calc >= 2) {
-                    $tracker_time .= "$tracker_time_calc " . xl('seconds');
-                } else {
-                    $tracker_time .= "$tracker_time_calc " . xl('second');
-                }
-            }
-        }
-    }
+//     if ($allow_sec) {
+//         if ($tracker_time_calc > 0) {
+//             if (strlen($minutes != 0)) {
+//                 if ($tracker_time_calc >= 2) {
+//                     $tracker_time .= ", $tracker_time_calc " . xl('seconds');
+//                 } else {
+//                     $tracker_time .= ", $tracker_time_calc " . xl('second');
+//                 }
+//             } else {
+//                 if ($tracker_time_calc >= 2) {
+//                     $tracker_time .= "$tracker_time_calc " . xl('seconds');
+//                 } else {
+//                     $tracker_time .= "$tracker_time_calc " . xl('second');
+//                 }
+//             }
+//         }
+//     }
 
-    return $tracker_time ;
-}
+//     return $tracker_time ;
+// }
 
-function fetch_Patient_Tracker_Events($from_date, $to_date, $provider_id = null, $facility_id = null, $form_apptstatus = null, $form_apptcat = null, $form_patient_name = null, $form_patient_id = null)
+function fetch_Workflow_Tracker_Events($from_date, $to_date, $provider_id = null, $facility_id = null, $form_apptstatus = null, $form_apptcat = null, $form_patient_name = null, $form_patient_id = null)
 {
     # used to determine which providers to display in the Patient Tracker
     if ($provider_id == 'ALL') {
@@ -136,37 +136,37 @@ function fetch_Patient_Tracker_Events($from_date, $to_date, $provider_id = null,
     return $events;
 }
 
-#check to see if a status code exist as a check in
-function is_checkin($option)
-{
+// #check to see if a status code exist as a check in
+// function is_checkin($option)
+// {
   
-    $row = sqlQuery("SELECT toggle_setting_1 FROM list_options WHERE " .
-    "list_id = 'apptstat' AND option_id = ? AND activity = 1", array($option));
-    if (empty($row['toggle_setting_1'])) {
-        return(false);
-    }
+//     $row = sqlQuery("SELECT toggle_setting_1 FROM list_options WHERE " .
+//     "list_id = 'apptstat' AND option_id = ? AND activity = 1", array($option));
+//     if (empty($row['toggle_setting_1'])) {
+//         return(false);
+//     }
 
-    return(true);
-}
+//     return(true);
+// }
 
 #check to see if a status code exist as a check out
-function is_checkout($option)
-{
+// function is_checkout($option)
+// {
   
-    $row = sqlQuery("SELECT toggle_setting_2 FROM list_options WHERE " .
-    "list_id = 'apptstat' AND option_id = ? AND activity = 1", array($option));
-    if (empty($row['toggle_setting_2'])) {
-        return(false);
-    }
+//     $row = sqlQuery("SELECT toggle_setting_2 FROM list_options WHERE " .
+//     "list_id = 'apptstat' AND option_id = ? AND activity = 1", array($option));
+//     if (empty($row['toggle_setting_2'])) {
+//         return(false);
+//     }
 
-    return(true);
-}
+//     return(true);
+// }
 
 
 # This function will return false for both below scenarios:
 #   1. The tracker item does not exist
 #   2. If the tracker item does exist, but the encounter has not been set
-function is_tracker_encounter_exist($apptdate, $appttime, $pid, $eid)
+function wis_tracker_encounter_exist($apptdate, $appttime, $pid, $eid)
 {
   #Check to see if there is an encounter in the patient_tracker table.
     $enc_yn = sqlQuery("SELECT encounter from patient_tracker WHERE `apptdate` = ? AND `appttime` = ? " .
@@ -180,7 +180,7 @@ function is_tracker_encounter_exist($apptdate, $appttime, $pid, $eid)
 
  # this function will return the tracker id that is managed
  # or will return false if no tracker id was managed (in the case of a recurrent appointment)
-function manage_tracker_status($apptdate, $appttime, $eid, $pid, $user, $status = '', $room = '', $enc_id = '')
+function wmanage_tracker_status($apptdate, $appttime, $eid, $pid, $user, $status = '', $room = '', $enc_id = '')
 {
 
   #First ensure the eid is not a recurrent appointment. If it is, then do not do anything and return false.
@@ -266,35 +266,35 @@ function manage_tracker_status($apptdate, $appttime, $eid, $pid, $user, $status 
     return $tracker_id;
 }
 
-# This is used to break apart the information contained in the notes field of
-#list_options. Currently the color and alert time are the only items stored
-function collectApptStatusSettings($option)
-{
-    $color_settings = array();
-    $row = sqlQuery("SELECT notes FROM list_options WHERE " .
-    "list_id = 'apptstat' AND option_id = ? AND activity = 1", array($option));
-    if (empty($row['notes'])) {
-        return $option;
-    }
+// # This is used to break apart the information contained in the notes field of
+// #list_options. Currently the color and alert time are the only items stored
+// function collectApptStatusSettings($option)
+// {
+//     $color_settings = array();
+//     $row = sqlQuery("SELECT notes FROM list_options WHERE " .
+//     "list_id = 'apptstat' AND option_id = ? AND activity = 1", array($option));
+//     if (empty($row['notes'])) {
+//         return $option;
+//     }
 
-    list($color_settings['color'], $color_settings['time_alert']) = explode("|", $row['notes']);
-    return $color_settings;
-}
+//     list($color_settings['color'], $color_settings['time_alert']) = explode("|", $row['notes']);
+//     return $color_settings;
+// }
 
 # This is used to collect the tracker elements for the Patient Flow Board Report
 # returns the elements in an array 
-function collect_Tracker_Elements($trackerid)
-{
-    $res = sqlStatement("SELECT * FROM patient_tracker_element WHERE pt_tracker_id = ? ORDER BY LENGTH(seq), seq ", array($trackerid));
-    for ($iter=0; $row=sqlFetchArray($res); $iter++) {
-        $returnval[$iter]=$row;
-    }
+// function collect_Tracker_Elements($trackerid)
+// {
+//     $res = sqlStatement("SELECT * FROM patient_tracker_element WHERE pt_tracker_id = ? ORDER BY LENGTH(seq), seq ", array($trackerid));
+//     for ($iter=0; $row=sqlFetchArray($res); $iter++) {
+//         $returnval[$iter]=$row;
+//     }
 
-    return $returnval;
-}
+//     return $returnval;
+// }
 
-#used to determine check in time 
-function collect_checkin($trackerid)
+#used to determine check in time for patient_flow_board_report
+function wcollect_checkin($trackerid)
 {
     $tracker = sqlQuery(
         "SELECT patient_tracker_element.start_datetime " .
@@ -314,7 +314,7 @@ function collect_checkin($trackerid)
 }
 
 #used to determine check out time
-function collect_checkout($trackerid)
+function wcollect_checkout($trackerid)
 {
     $tracker = sqlQuery(
         "SELECT patient_tracker_element.start_datetime " .
@@ -333,53 +333,53 @@ function collect_checkout($trackerid)
     }
 }
 
-function random_drug_test($tracker_id, $percentage, $yearly_limit)
-{
+// function random_drug_test($tracker_id, $percentage, $yearly_limit)
+// {
 
-# Check if randomization has not yet been done (is random_drug_test NULL). If already done, then exit.
-      $drug_test_done = sqlQuery("SELECT `random_drug_test`, pid from patient_tracker " .
-                                     "WHERE id =? ", array($tracker_id));
-      $Patient_id = $drug_test_done['pid'];
+// # Check if randomization has not yet been done (is random_drug_test NULL). If already done, then exit.
+//       $drug_test_done = sqlQuery("SELECT `random_drug_test`, pid from patient_tracker " .
+//                                      "WHERE id =? ", array($tracker_id));
+//       $Patient_id = $drug_test_done['pid'];
 
-    if (is_null($drug_test_done['random_drug_test'])) {
-        # get a count of the number of times the patient has been screened.
-        if ($yearly_limit >0) {
-            # check to see if screens are within the current year.
-            $lastyear = date("Y-m-d", strtotime("-1 year", strtotime(date("Y-m-d H:i:s"))));
-            $drug_test_count = sqlQuery("SELECT COUNT(*) from patient_tracker " .
-                                 "WHERE drug_screen_completed = '1' AND apptdate >= ? AND pid =? ", array($lastyear,$Patient_id));
-        }
+//     if (is_null($drug_test_done['random_drug_test'])) {
+//         # get a count of the number of times the patient has been screened.
+//         if ($yearly_limit >0) {
+//             # check to see if screens are within the current year.
+//             $lastyear = date("Y-m-d", strtotime("-1 year", strtotime(date("Y-m-d H:i:s"))));
+//             $drug_test_count = sqlQuery("SELECT COUNT(*) from patient_tracker " .
+//                                  "WHERE drug_screen_completed = '1' AND apptdate >= ? AND pid =? ", array($lastyear,$Patient_id));
+//         }
 
-        # check that the patient is not at the yearly limit.
-        if ($drug_test_count['COUNT(*)'] >= $yearly_limit && ($yearly_limit >0)) {
-             $drugtest = 0;
-        } else {
-          # Now do the randomization and set random_drug_test to the outcome.
+//         # check that the patient is not at the yearly limit.
+//         if ($drug_test_count['COUNT(*)'] >= $yearly_limit && ($yearly_limit >0)) {
+//              $drugtest = 0;
+//         } else {
+//           # Now do the randomization and set random_drug_test to the outcome.
 
-             $drugtest = 0;
-             $testdrug = mt_rand(0, 100);
-            if ($testdrug <= $percentage) {
-                $drugtest = 1;
-            }
-        }
+//              $drugtest = 0;
+//              $testdrug = mt_rand(0, 100);
+//             if ($testdrug <= $percentage) {
+//                 $drugtest = 1;
+//             }
+//         }
 
-       #Update the tracker file.
-        sqlStatement("UPDATE patient_tracker SET " .
-                 "random_drug_test = ? " .
-                 "WHERE id =? ", array($drugtest,$tracker_id));
-    }
-}
+//        #Update the tracker file.
+//         sqlStatement("UPDATE patient_tracker SET " .
+//                  "random_drug_test = ? " .
+//                  "WHERE id =? ", array($drugtest,$tracker_id));
+//     }
+// }
 
 /* get information the statuses of the appointments*/
-function getApptStatus($appointments)
-{
+// function getApptStatus($appointments)
+// {
 
-    $astat = array();
-    $astat['count_all'] = count($appointments);
-    //group the appointment by status
-    foreach ($appointments as $appointment) {
-        $astat[$appointment['pc_apptstatus']] += 1;
-    }
+//     $astat = array();
+//     $astat['count_all'] = count($appointments);
+//     //group the appointment by status
+//     foreach ($appointments as $appointment) {
+//         $astat[$appointment['pc_apptstatus']] += 1;
+//     }
 
-    return $astat;
-}
+//     return $astat;
+// }

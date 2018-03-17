@@ -673,8 +673,8 @@ if (!$_REQUEST['flb_table']) {
                         if ($GLOBALS['ptkr_visit_reason']) {
                             $reason_visit = $appointment['pc_hometext'];
                         }
-                        $newarrive = collect_checkin($tracker_id);
-                        $newend = collect_checkout($tracker_id);
+                        $newarrive = wcollect_checkin($tracker_id);
+                        $newend = wcollect_checkout($tracker_id);
                         $colorevents = (collectApptStatusSettings($status));
                         $bgcolor = $colorevents['color'];
                         $statalert = $colorevents['time_alert'];

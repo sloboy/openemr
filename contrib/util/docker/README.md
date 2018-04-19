@@ -1,97 +1,73 @@
-# OpenEMR Local Development Docker
+# OpenEMR Official Docker Image
 
-This is a development Docker Compose solution for programming OpenEMR. New and existing contributors can enjoy the benefits of simply pulling down their fork and running a single command to get coding!
+The docker image is maintained at https://hub.docker.com/r/openemr/openemr/
+(see there for more details)
 
-Code changes are _immediately_ reflected in the container.
+## Tags
 
-_Note: This is only to be used for local development purposes. For production-grade deployment options, please check out [openemr-devops](https://github.com/openemr/openemr-devops)._
+Tags and their current aliases are shown below:
 
-## Setup
+ - `5.0.0`: latest
 
-Install [git](https://git-scm.com/downloads), [docker](https://www.docker.com/get-docker) and [compose](https://docs.docker.com/compose/install/) for your system. Also, make sure you have a [fork](https://help.github.com/articles/fork-a-repo/) of OpenEMR.
+It is recommended to specify a version number in production, to ensure your build process pulls what you expect it to.
 
+## How can I just spin up OpenEMR?
+
+*You **need** to run an instance of mysql/mariadb as well and connect it to this container! You can then either use auto-setup with environment variables (see below) or you can manually set up, telling the server where to find the db.* The easiest way is to use `docker-compose`. The following `docker-compose.yml` file is a good example:
+```yaml
+# Use admin/pass as user/password credentials to login to openemr (from OE_USER and OE_PASS below)
+# MYSQL_HOST and MYSQL_ROOT_PASS are required for openemr
+# MYSQL_USER, MYSQL_PASS, OE_USER, MYSQL_PASS are optional for openemr and
+#   if not provided, then default to openemr, openemr, admin, and pass respectively.
+version: '3.1'
+services:
+  mysql:
+    restart: always
+    image: mysql
+    command: ['mysqld','--character-set-server=utf8']
+    volumes:
+    - databasevolume:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+  openemr:
+    restart: always
+    image: openemr/openemr:5.0.0
+    ports:
+    - 80:80
+    - 443:443
+    volumes:
+    - logvolume01:/var/log
+    - sitevolume:/var/www/localhost/htdocs/openemr/sites
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_ROOT_PASS: root
+      MYSQL_USER: openemr
+      MYSQL_PASS: openemr
+      OE_USER: admin
+      OE_PASS: pass
+    depends_on:
+    - mysql
+volumes:
+  logvolume01: {}
+  sitevolume: {}
+  databasevolume: {}
 ```
-$ git clone git@github.com:YOUR_USERNAME/openemr.git
-$ cd openemr
-$ docker-compose up
-```
+[![Try it!](https://github.com/play-with-docker/stacks/raw/cff22438cb4195ace27f9b15784bbb497047afa7/assets/images/button.png)](http://play-with-docker.com/?stack=https://gist.githubusercontent.com/bradymiller/988d5105e38ffd8f6fb3cf49bbfae9f0/raw/26fa8e7e3e1d7cd97d60185a96a033cff33df346/openemr-500-docker-example-docker-compose.yml)
 
-Open up `localhost:8080` in the latest Chrome or Firefox!
+## Environment Variables
 
-## Usage
+Required environment settings for auto installation are `MYSQL_HOST` and `MYSQL_ROOT_PASS` (Note that can force `MYSQL_ROOT_PASS` to be empty by passing as 'BLANK' variable).
 
-### Examine Containers
+Optional settings for the auto installation include database parameters `MYSQL_ROOT_USER`, `MYSQL_USER`, `MYSQL_PASS`, `MYSQL_DATABASE`, and openemr parameters `OE_USER`, `OE_PASS`.
 
-Run `$ docker ps` to see the OpenEMR and MySQL containers in the following format:
+Can override auto installation and force manual installation by setting `MANUAL_SETUP` environment setting to 'yes'.
 
-```
-CONTAINER ID        IMAGE                       COMMAND                  CREATED             STATUS              PORTS                                         NAMES
-769905694cc0        openemr_local_development   "/var/www/localhos..."   4 minutes ago       Up 4 minutes        0.0.0.0:8080->80/tcp, 0.0.0.0:8081->443/tcp   openemrlocaldevelopment
-4876b74e3e41        mysql                       "docker-entrypoint..."   5 minutes ago       Up 5 minutes        3306/tcp                                      openemrlocaldevelopmentdocker_mysql_1
-```
+Can use both port 80 and 443. Port 80 is standard http. Port 443 is https/ssl and uses a self-signed certificate by default; if assign the `DOMAIN` and `EMAIL`(optional) environment settings, then it will set up and maintain certificates via letsencrypt.
 
-### Bash Access
+## Where to get help?
 
-```
-$ docker exec -it openemr_local_development bash
-```
+For general knowledge, our [wiki](http://www.open-emr.org/wiki) is a repository of helpful information. The [forums](https://community.open-emr.org/) are a great source for assistance and news about emerging features. We also have a [chat](https://chat.open-emr.org/) system for real-time advice and to coordinate our development efforts.
 
-### MySQL Client Access
+## How can I contribute?
 
-If you are interested in using the MySQL client line as opposed to a GUI program, execute the following (password is passed in/is simple because this is for local development purposes):
-
-```
-$ docker exec -it openemr_local_development mysql -u root --password=root openemr
-```
-
-### Apache Error Log Tail
-
-```
-$ docker exec -it openemr_local_development tail -f /var/log/apache2/error.log
-```
-
-...if you want the `access.log`, you can use this approach as well.
-
-### Recommended Development Setup
-
-While there is no officially recommended toolset for programming OpenEMR, many in the community have found [PhpStorm](https://www.jetbrains.com/phpstorm/), [Sublime Text](https://www.sublimetext.com/), and [Vim](http://www.vim.org/) to be useful for coding. For database work, [MySQL Workbench](https://dev.mysql.com/downloads/workbench/) offers a smooth experience.
-
-Many helpful tips and development "rules of thumb" can be found by reviewing [OpenEMR Development](http://open-emr.org/wiki/index.php/OpenEMR_Wiki_Home_Page#Development). Remember that learning to code against a very large and complex system is not a task that will be completed over night. Feel free to post on [the development forums](https://community.open-emr.org/c/openemr-development) if you have any questions after reviewing the wiki.
-
-### Ports
-
-- HTTP is running on port 80 in the OpenEMR container and port 8080 on the host machine.
-- HTTPS is running on port 443 in the OpenEMR container and port 8081 on the host machine.
-- MySQL is running on port 3306 in the MySQL container and port 3307 on the host machine.
-
-All host machine ports can be changed by editing the `docker-compose.yml` file. Host ports differ from the internal container ports by default to avoid conflicts services potentially running on the host machine (a web server such as Nginx, Tomcat, or Apache2 could be installed on the host machine that makes use of port 80, for instance).
-
-### Additional Build Tools
-
-Programmers looking to use OpenEMR's [Bower](http://www.open-emr.org/wiki/index.php/Bower) and [Composer](http://www.open-emr.org/wiki/index.php/Composer) build tools can simply `bash` into the OpenEMR container and use them as expected.
-
-### Reset Workspace
-
-Sometimes git and containers can get into weird states and the best option is to simply reset your workspace. Execute the following to accomplish this:
-
-```
-$ git checkout .
-$ git clean -f -d
-$ # Go to the shell with docker-compose running and hit ctrl-c to stop docker-compose up
-$ docker-compose rm -v
-$ docker-compose up
-```
-
-If the state is still not good, a last resort would be to run `$ docker system prune`.
-
-### Git Gotchas
-
-When doing a `$ git status`, you will see a decent amount of files either modified or deleted in `./interface/main/calendar/modules/`, `./sites/default/`, and setup + configration files at `./`. Please do not include these files in your branch by being careful to `$ git add ` only the files you are changing or adding.
-
-The gap presented with this "gotcha" is something our community is working to close and we hope to provide a reasonably elegant solution in future releases of this docker-compose system.
-
-## Meta
-
-The reason `docker-assets.zip` is in place is because we don't want to serve up the setup scripts via Apache. There is also an `.htaccess` file in place to really lock down this directory.
-
-If you wish to develop code for this solution, please unzip the contents, make your changes, and then rezip the contents. The Pull Request reviewer will have to manually compare the changes the old-fashioned way :).
+The OpenEMR community is a vibrant and active group, and people from any background can contribute meaningfully, whether they are optimizing our DB calls, or they're doing translations to their native tongue. Feel free to reach out to us at via [chat](https://chat.open-emr.org/)!

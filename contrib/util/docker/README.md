@@ -13,9 +13,6 @@ Install [git](https://git-scm.com/downloads), [docker](https://www.docker.com/ge
 ```
 $ git clone git@github.com:YOUR_USERNAME/openemr.git
 $ cd openemr
-<<<<<<< HEAD
-$ docker-compose up
-=======
 $ docker-compose up -d
 ```
 - Option 2. Run the docker from a separate directory that is synchronized with your git
@@ -60,7 +57,6 @@ directory) and then restart the development docker:
 ```bash
 docker-compose down -v
 docker-compose up -d
->>>>>>> also added mariadb-dev docker for future mariadb version testing
 ```
 
 Open up `localhost:8080` in the latest Chrome or Firefox!
@@ -73,6 +69,7 @@ Run `$ docker ps` to see the OpenEMR and MySQL containers in the following forma
 
 ```
 CONTAINER ID        IMAGE                       COMMAND                  CREATED             STATUS              PORTS                                         NAMES
+<<<<<<< HEAD
 <<<<<<< HEAD
 769905694cc0        openemr_local_development   "/var/www/localhos..."   4 minutes ago       Up 4 minutes        0.0.0.0:8080->80/tcp, 0.0.0.0:8081->443/tcp   openemrlocaldevelopment
 4876b74e3e41        mysql                       "docker-entrypoint..."   5 minutes ago       Up 5 minutes        3306/tcp                                      openemrlocaldevelopmentdocker_mysql_1
@@ -88,6 +85,16 @@ dee6b2216f6d        phpmyadmin/phpmyadmin       "/run.sh phpmyadmin"     6 secon
 7ef17b801312        phpmyadmin/phpmyadmin       "/run.sh phpmyadmin"     6 seconds ago       Up 5 seconds        0.0.0.0:8103->80/tcp                          openemr_phpmyadmin-mysql-dev_1
 27eaca4ced97        phpmyadmin/phpmyadmin       "/run.sh phpmyadmin"     6 seconds ago       Up 5 seconds        0.0.0.0:8100->80/tcp                          openemr_phpmyadmin-mariadb_1
 e1591a57cfd4        mariadb:10.2                "docker-entrypoint..."   6 seconds ago       Up 5 seconds        3306/tcp                                      openemr_mariadb_1
+=======
+1008d348a0c9        mariadb:10.2                "docker-entrypoint..."   2 minutes ago       Up 2 minutes        3306/tcp                                      openemr_mariadb_1
+664c63569927        mysql:8                     "docker-entrypoint..."   2 minutes ago       Up 2 minutes        3306/tcp                                      openemr_mysql-dev_1
+6524b0fb4060        openemr/openemr:flex        "./run_openemr.sh"       2 minutes ago       Up 2 minutes        0.0.0.0:8080->80/tcp, 0.0.0.0:8090->443/tcp   openemr_openemr-7-1_1
+fd0cbeaabcc6        openemr/openemr:flex-edge   "./run_openemr.sh"       2 minutes ago       Up 2 minutes        0.0.0.0:8081->80/tcp, 0.0.0.0:8091->443/tcp   openemr_openemr-7-2_1
+577db79a7350        mariadb:10.3                "docker-entrypoint..."   2 minutes ago       Up 2 minutes        3306/tcp                                      openemr_mariadb-dev_1
+672444f3ec97        mysql:5.7                   "docker-entrypoint..."   2 minutes ago       Up 2 minutes        3306/tcp                                      openemr_mysql_1
+145078602bd0        couchdb                     "tini -- /docker-e..."   2 minutes ago       Up 2 minutes        4369/tcp, 5984/tcp, 9100/tcp                  openemr_couchdb_1
+f72caa088849        phpmyadmin/phpmyadmin       "/run.sh phpmyadmin"     2 minutes ago       Up 2 minutes        0.0.0.0:8100->80/tcp                          openemr_phpmyadmin_1
+>>>>>>> decreased development dockers overhead by just using one phpmyadmin docker
 ```
  - Note the `NAMES` column is extremely important and how you run docker commands
 on specific containers. For example, to go into a shell script in the
@@ -138,9 +145,7 @@ All host machine ports can be changed by editing the `docker-compose.yml` file. 
 PHP 7.1 host machine and port 8081 on the PHP 7.2 host machine.
 - HTTPS is running on port 443 in the OpenEMR containers and port 8090 on the
 PHP 7.1 host machine and port 8091 on the PHP 7.2 host machine.
-- HTTP is running on port 80 in the PhpMyADMIN containers and port 8100 on the
-MariaDB GUI host machine and port 8101 on the MySQL GUI host machine and port
-8102 on the MariaDB-dev GUI host machine and port 8103 on the MySQL-dev GUI
+- HTTP is running on port 80 in the PhpMyADMIN container and port 8100 on the
 host machine.
 - MySQL is running on port 3306 in the MariaDB/MySQL/MariaDB-dev/MySQL-dev containers.
 

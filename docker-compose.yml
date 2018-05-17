@@ -86,6 +86,7 @@ services:
     image: couchdb
 >>>>>>> also added mariadb-dev docker for future mariadb version testing
     environment:
+<<<<<<< HEAD
       MYSQL_HOST: mysql
       MYSQL_ROOT_PASS: wtr&5YU
       MYSQL_USER: derek
@@ -96,3 +97,13 @@ services:
       #EMAIL: dhillison@gmail.com
     links:
     - mysql
+=======
+      COUCHDB_USER: admin
+      COUCHDB_PASSWORD: password
+  orthanc:
+    restart: always
+    image: jodogne/orthanc-plugins
+    ports:
+    - 4242:4242
+    - 8042:8042
+>>>>>>> added orthanc docker to docker development environment (#1642)

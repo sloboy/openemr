@@ -84,7 +84,13 @@ services:
   couchdb:
     restart: always
     image: couchdb
+<<<<<<< HEAD
 >>>>>>> also added mariadb-dev docker for future mariadb version testing
+=======
+    ports:
+    - 5984:5984
+    - 6984:6984
+>>>>>>> added additional testing support for couchdb docker in dev environment
     environment:
 <<<<<<< HEAD
       MYSQL_HOST: mysql

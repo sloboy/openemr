@@ -129,8 +129,8 @@ if (empty($collectthis)) {
     $collectthis = $collectthis[array_keys($collectthis)[0]]["rules"];
 }
 ?>
-<?php $disabled = (!$g_edit && $have_group_global_enabled )?' disabled=true; ':'';?>
-<?php if ($disabled) {
+<?php $group_disabled = ($_GET['group'] && !$g_edit && $have_group_global_enabled )?' disabled=true; ':'';?>
+<?php if ($group_disabled) {
     echo '<script>$( document ).ready(function(){
     $("input").prop("disabled", true);
     $("select").prop("disabled", true);
@@ -623,6 +623,7 @@ if (empty($collectthis)) {
             } elseif (!$row['pc_multiple']) {
                 if ($GLOBALS['select_multi_providers']) {
                     $prov = $_POST['form_provider'][0];
+                    $_POST['form_provider'] = $prov;
                 } else {
                     $prov =  $_POST['form_provider'];
                 }

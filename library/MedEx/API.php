@@ -349,18 +349,16 @@ class Events extends Base
             $escClause=[];
             $escapedArr = []; //will hold prepared statement items for query.
             if ($event['M_group'] == 'REMINDER') {
-                if ($event['time_order'] > '0') {
+                if ($event['time_order'] > '0') { //upcoming appts
                     $interval ="+";
                     //NOTE IF you have customized the pc_appstatus flags, you need to adjust them here too.
+                    //reminders are always or stop, that's it.
                     if ($event['E_instructions'] == "stop") {   // ie. don't send this if it has been confirmed.
                         $appt_status = " and pc_apptstatus='-'";//we only look at future appts w/ apptstatus == NONE ='-'
                         // OR send anyway - unless appstatus is not cancelled, then it is no longer an appointment to confirm...
-                    } elseif ($event['E_instructions'] == "always") {  //send anyway
+                    } else {  //send anyway
                         $appt_status = " and pc_apptstatus != '%'
                                              and pc_apptstatus != 'x' ";
-                    } else { //reminders are always or stop, that's it
-                        $event['E_instructions'] ='stop';
-                        $appt_status = " and pc_apptstatus='-'";//we only look at future appts w/ apptstatus == NONE ='-'
                     }
                 } else {
                     // Past appts -> appts that are completed.
@@ -398,9 +396,10 @@ class Events extends Base
                                     WHERE (pc_eventDate > CURDATE() ".$interval." INTERVAL ".$timing." DAY
                                     AND pc_eventDate < (curdate() ".$interval." INTERVAL '".$timing2."' DAY_MINUTE))
                                     AND pc_facility IN (".$places.")
+                                    ". $appt_status."
                                     AND pat.pid=cal.pc_pid  ORDER BY pc_eventDate,pc_startTime";
 
-                    $result = sqlStatement($query, $escapedArr);
+                    $result = sqlStatement($query);
                     while ($appt= sqlFetchArray($result)) {
                         list($response,$results) = $this->MedEx->checkModality($event, $appt);
                         if ($results==false) {
@@ -611,7 +610,6 @@ class Events extends Base
                     if ($results==false) {
                         continue; //not happening - either not allowed or not possible
                     }
-                    $req_appt = print_r($appt, true);
                     $count_announcements++;
 
                     $appt2 = array();
@@ -742,26 +740,6 @@ class Events extends Base
                     }
                 }
             } else if ($event['M_group'] == 'CLINICAL_REMINDER') {
-                continue;
-                // from function fetch_reminders($patient_id = '', $type = '', $due_status = '', $select = '*')
-                // we need to run the update_reminders first... Use the batch feature probably.
-                // Perhaps in MedEx.php?
-                // $MedEx->campaign->events($token); to get the list of things we need to do:
-                //  eg.  category and item.
-                // $sql = "SELECT * FROM `patient_reminders` where `active`='1' AND
-                //      `date_sent` IS NULL ORDER BY `patient_reminders`.`due_status` DESC ";
-                //   and category=$CR['category']
-                //  MedEx needs this - we are extrapolating it's name for display and item = $CR['item'] (M_name)
-                // We should already have the patient id in the $appt array.
-                // We should also have the reminder info we are targeting.
-                // Then we just need to the matching patient data.
-                // Check if possible_modalities here to see if the event is even possible?
-                // Think we should do that in $MedEx->campaign->events($token);
-                // if not possible we will need to add that info into a Clinical Reminders Flow Board........ visually.
-                // We will need to create this which means we need to overhaul the whole reminders code too?
-                //Maybe not.
-
-                //then this
                 $sql = "SELECT * FROM `patient_reminders`,`patient_data`
                               WHERE
                             `patient_reminders`.pid ='".$event['PID']."' AND
@@ -770,7 +748,6 @@ class Events extends Base
                             `patient_reminders`.pid=`patient_data`.pid
                               ORDER BY `due_status`, `date_created`";
                 $ures = sqlStatementCdrEngine($sql);
-                $returnval=array();
                 while ($urow = sqlFetchArray($ures)) {
                     list($response,$results) = $this->MedEx->checkModality($event, $urow);
                     if ($results==false) {
@@ -779,7 +756,6 @@ class Events extends Base
                     $fields2['clinical_reminders'][] = $urow;
                 }
             } else if ($event['M_group'] == 'GOGREEN') {
-                $count=0;
                 $escapedArr=[];
                 if (!empty($event['appt_stats'])) {
                     $prepare_me ='';
@@ -903,7 +879,6 @@ class Events extends Base
                             continue; //not happening - either not allowed or not possible
                     }
                     $count_appts++;
-                    continue;
                     $appt2 = array();
                     $appt2['pc_pid']        = $appt['pc_pid'];
                     $appt2['pc_eventDate']  = $appt['pc_eventDate'];
@@ -945,7 +920,7 @@ class Events extends Base
         if (!empty($appt3)) {
             $this->process($token, $appt3);
         }
-        $responses['deletes'] = $hipaa;
+        $responses['deletes'] = $deletes;
         $responses['count_appts'] = $count_appts;
         $responses['count_recalls'] = $count_recalls;
         $responses['count_announcements'] = $count_announcements;
@@ -1102,14 +1077,15 @@ class Callback extends Base
             //Store responses in TABLE medex_outgoing
             $sqlINSERT = "INSERT INTO medex_outgoing (msg_pc_eid, msg_pid, campaign_uid, msg_type, msg_reply, msg_extra_text, msg_date, medex_uid)
                                 VALUES (?,?,?,?,?,?,utc_timestamp(),?)";
-
+            if (!$data['M_type']) {
+                $data['M_type'] ='pending'; }
             sqlQuery($sqlINSERT, array($data['pc_eid'],$data['patient_id'], $data['campaign_uid'], $data['M_type'],$data['msg_reply'],$data['msg_extra'],$data['msg_uid']));
 
             if ($data['msg_reply']=="CONFIRMED") {
                 $sqlUPDATE = "UPDATE openemr_postcalendar_events SET pc_apptstatus = ? WHERE pc_eid=?";
                 sqlStatement($sqlUPDATE, array($data['msg_type'],$data['pc_eid']));
                 //need to insert this into patient_tracker
-                $query = "SELECT * FROM patient_tracker WHERE pc_eid=?";
+                $query = "SELECT * FROM patient_tracker WHERE eid=?";
                 $tracker = sqlFetchArray(sqlStatement($query, array($data['pc_eid'])));  //otherwise this will need to be a loop
                 #Update lastseq in tracker.
                 sqlStatement(
@@ -1121,7 +1097,7 @@ class Callback extends Base
                 sqlInsert(
                     "INSERT INTO `patient_tracker_element` " .
                             "(`pt_tracker_id`, `start_datetime`, `user`, `status`, `seq`) " .
-                            "VALUES (?,?,?,?,?,?)",
+                            "VALUES (?,?,?,?,?)",
                     array($tracker['id'],$datetime,'MedEx',$data['msg_type'],($tracker['lastseq']+1))
                 );
             } elseif ($data['msg_reply']=="CALL") {
@@ -1861,7 +1837,7 @@ if (!empty($logged_in['products']['not_ordered'])) {
                         WHERE pat.pid=medex_recalls.r_pid AND
                         r_eventDate >= ? AND
                         r_eventDate <= ? AND
-                        pat.deceased_date =''
+                        IFNULL(pat.deceased_date,0) = 0
                         ORDER BY r_eventDate ASC";
         $result = sqlStatement($query, array($from_date,$to_date));
         while ($recall= sqlFetchArray($result)) {
@@ -2021,7 +1997,6 @@ if (!empty($logged_in['products']['not_ordered'])) {
          * @param $recall
          * @param string $events
          * @return mixed
-
          * @internal param string $possibleModalities
          */
     public function show_progress_recall($recall, $events = '')
@@ -2332,7 +2307,7 @@ if (!empty($logged_in['products']['not_ordered'])) {
     }
     public function display_add_recall($pid = 'new')
     {
-        global $result_pat;
+        
         ?>
         <div class="container-fluid">
             <div class="row-fluid showReminders clear text-center">
@@ -2352,8 +2327,8 @@ if (!empty($logged_in['products']['not_ordered'])) {
                                 <div class="divTableCell recall_name">
                                     <input type="text" name="new_recall_name" id="new_recall_name" class="form-control"
                                         onclick="recall_name_click(this)"
-                                        value="<?php echo attr($result_pat['fname'])." ".attr($result_pat['lname']); ?>" style="width:225px;">
-                                    <input type="hidden" name="new_pid" id="new_pid" value="<?php echo attr($result_pat['id']); ?>">
+                                        value="" style="width:225px;">
+                                    <input type="hidden" name="new_pid" id="new_pid" value="">
                                 </div>
                             </div>
                             <div class="divTableRow">
@@ -2377,9 +2352,7 @@ if (!empty($logged_in['products']['not_ordered'])) {
                             <div class="divTableRow">
                                 <div class="divTableCell divTableHeading"><?php echo xlt('Recall Reason'); ?></div>
                                 <div class="divTableCell">
-                                    <input class="form-control" type="text"  style="width:225px;" name="new_reason" id="new_reason" value="<?php
-                                    if ($result_pat['PLAN'] > '') {
-                                        echo attr(rtrim("|", trim($result_pat['PLAN']))); } ?>">
+                                    <input class="form-control" type="text"  style="width:225px;" name="new_reason" id="new_reason" value="">
                                     </div>
                                 </div>
                                 <div class="divTableRow">
@@ -2446,27 +2419,25 @@ if (!empty($logged_in['products']['not_ordered'])) {
                                 <div class="divTableRow news">
                                     <div class="divTableCell divTableHeading"><?php echo xlt('DOB'); ?></div>
                                     <div class="divTableCell">&nbsp;&nbsp;
-                                    <?php
-                                    $DOB = oeFormatShortDate($result_pat['DOB']);
-                                    ?>
-                                    <span name="new_DOB" id="new_DOB" style="width:90px;"><?php echo text($DOB); ?></span> -
-                                     <span id="new_age" name="new_age"><?php echo text($result_pat['age']); ?></span></div>
+                                    
+                                    <span name="new_DOB" id="new_DOB" style="width:90px;"></span> -
+                                     <span id="new_age" name="new_age"></span></div>
                                 </div>
                                 <div class="divTableRow news">
                                     <div class="divTableCell divTableHeading"><?php echo xlt('Address'); ?></div>
                                     <div class="divTableCell">
-                                    <input type="text"  class="form-control" name="new_address" id="new_address" style="width:240px;" value="<?php echo attr($result_pat['street']); ?>"><br />
-                                    <input type="text"  class="form-control" name="new_city" id="new_city" style="width:100px;" value="<?php echo attr($result_pat['city']); ?>">
-                                    <input type="text"  class="form-control" name="new_state" id="new_state" style="width:40px;" value="<?php echo attr($result_pat['state']); ?>">
-                                    <input type="text"  class="form-control" name="new_postal_code" id="new_postal_code" style="width:65px;" value="<?php echo attr($result_pat['postal_code']); ?>"></div>
+                                    <input type="text"  class="form-control" name="new_address" id="new_address" style="width:240px;" value=""><br />
+                                    <input type="text"  class="form-control" name="new_city" id="new_city" style="width:100px;" value="">
+                                    <input type="text"  class="form-control" name="new_state" id="new_state" style="width:40px;" value="">
+                                    <input type="text"  class="form-control" name="new_postal_code" id="new_postal_code" style="width:65px;" value=""></div>
                                 </div>
                                 <div class="divTableRow news">
                                     <div class="divTableCell divTableHeading phone_home"><?php echo xlt('Home Phone'); ?></div>
-                                    <div class="divTableCell"><input type="text" name="new_phone_home" id="new_phone_home" class="form-control" value="<?php echo attr($result_pat['phone_home']); ?>"></div>
+                                    <div class="divTableCell"><input type="text" name="new_phone_home" id="new_phone_home" class="form-control" value=""></div>
                                 </div>
                                 <div class="divTableRow news">
                                     <div class="divTableCell divTableHeading phone_cell"><?php echo xlt('Mobile Phone'); ?></div>
-                                    <div class="divTableCell"><input type="text" name="new_phone_cell" id="new_phone_cell" class="form-control" value="<?php echo attr($result_pat['phone_cell']); ?>"></div>
+                                    <div class="divTableCell"><input type="text" name="new_phone_cell" id="new_phone_cell" class="form-control" value=""></div>
                                 </div>
                                 <div class="divTableRow news">
                                     <div class="divTableCell divTableHeading msg_sent" data-placement="auto" title="<?php echo xla('Text Message permission'); ?>"><?php echo xlt('SMS OK'); ?></div>
@@ -2487,7 +2458,7 @@ if (!empty($logged_in['products']['not_ordered'])) {
                                 </div>
                                 <div class="divTableRow news">
                                     <div class="divTableCell divTableHeading phone_cell"><?php echo xlt('E-Mail'); ?></div>
-                                    <div class="divTableCell"><input type="email" name="new_email" id="new_email" class="form-control" style="width:225px;" value="<?php echo attr($result_pat['email']); ?>"></div>
+                                    <div class="divTableCell"><input type="email" name="new_email" id="new_email" class="form-control" style="width:225px;" value=""></div>
                                 </div>
 
                                 <div class="divTableRow news">
@@ -2519,8 +2490,19 @@ if (!empty($logged_in['products']['not_ordered'])) {
                         <?php require($GLOBALS['srcdir'] . '/js/xl/jquery-datetimepicker-2-5-4.js.php'); ?>
                         <?php // can add any additional javascript settings to datetimepicker here; need to prepend first setting with a comma ?>
                     });
+                    
                 });
-    </script>
+                <?php
+                if ($_SESSION['pid']>'') {
+                    ?>
+                    setpatient('<?php echo text($_SESSION['pid']); ?>');
+                    <?php
+                }
+                ?>
+                var xljs_NOTE = '<?php echo xl("NOTE"); ?>';
+                var xljs_PthsApSched = '<?php echo xl("This patient already has an appointment scheduled for"); ?>';
+            
+            </script>
             <?php
     }
     public function icon_template()
@@ -2618,16 +2600,17 @@ if (!empty($logged_in['products']['not_ordered'])) {
     }
 
     /**
-         *  This function displays a bootstrap responsive pop-up window containing an image of a phone with a record of our messaging activity.
-         *  It is fired from the Flow board.
-         *  It may also end up on the Recall Board.
-         *  It may also allow direct two-way SMS texting to patients if desired.
-         *  It may also allow playback of AVM audio files.
-         *  It may also do other things that haven't been written yet.
-         *  It may open to a messaging status board on large screens.
-         * @param $logged_in
-         * @return bool
-         */
+     *  This function displays a bootstrap responsive pop-up window containing an image of a phone with a record of our messaging activity.
+     *  It is fired from the Flow board.
+     *  It enables two-way SMS texting between logged_in users and patients, if desired.
+     *  It may also end up on the Recall Board.
+     *  It may also allow playback of AVM audio files.
+     *  It may also do other things that haven't been written yet.
+     *  It may open to a messaging status board on large screens.
+     * @param $logged_in
+     * @return bool
+     */
+         
     public function SMS_bot($logged_in)
     {
         $fields = array();
@@ -2943,7 +2926,7 @@ class Setup extends Base
                 $("#actualSignUp").click(function() {
                     var url = "save.php?MedEx=start";
                     var email = $("#new_email").val();
-                    $("#actualSignUp").html('<i class="fa fa-spinner fa-pulse fa-2x fa-fw"></i><span class="sr-only">Loading...</span>');
+                    $("#actualSignUp").html('<i class="fa fa-spinner fa-pulse fa-fw"></i><span class="sr-only">Loading...</span>');
                     formData = $("form#medex_start").serialize();
                     top.restoreSession();
                     $.ajax({
@@ -2957,7 +2940,6 @@ class Setup extends Base
                         $("#ihvread").addClass('nodisplay');
                         $('#myModal').modal('toggle');
                         if (obj.success) {
-                            //$("#butme").html('<a href="messages.php?go=Preferences"><?php echo xlt('Preferences'); ?></a>');
                             url="https://www.medexbank.com/login/"+email;
                             window.open(url, 'clinical', 'resizable=1,scrollbars=1');
                             refresh_me();

@@ -63,7 +63,10 @@ if (isset($_GET['auth']) && ($_GET['auth'] == "login") && isset($_POST['authUser
     //store the very first initial timestamp for timeout errors
     $_SESSION["last_update"] = time();
 } else if ((isset($_GET['auth'])) && ($_GET['auth'] == "logout")) {
-    newEvent("logout", $_SESSION['authUser'], $_SESSION['authProvider'], 1, "success");
+    //If session has timed out / been destroyed, logout record for null user/provider will be invalid.
+    if (!empty($_SESSION['authUser']) && !empty($_SESSION['authProvider'])) {
+        newEvent("logout", $_SESSION['authUser'], $_SESSION['authProvider'], 1, "success");
+    }
     authCloseSession();
     authLoginScreen(true);
 } else {
@@ -220,9 +223,9 @@ function getUserList($cols = '*', $limit = 'all', $start = '0')
 function getProviderList($cols = '*', $limit = 'all', $start = '0')
 {
     if ($limit = "all") {
-        $rez = sqlStatement("select $cols from groups order by date DESC");
+        $rez = sqlStatement("select $cols from `groups` order by date DESC");
     } else {
-        $rez = sqlStatement("select $cols from groups order by date DESC limit $limit, $start");
+        $rez = sqlStatement("select $cols from `groups` order by date DESC limit $limit, $start");
     }
 
     for ($iter = 0; $row = sqlFetchArray($rez); $iter++) {
@@ -234,12 +237,12 @@ function getProviderList($cols = '*', $limit = 'all', $start = '0')
 
 function addGroup($groupname)
 {
-    return sqlInsert("insert into groups (name) values (?)", array($groupname));
+    return sqlInsert("insert into `groups` (name) values (?)", array($groupname));
 }
 
 function delGroup($group_id)
 {
-    return sqlQuery("delete from groups where id = ? limit 0,1", array($group_id));
+    return sqlQuery("delete from `groups` where id = ? limit 0,1", array($group_id));
 }
 
 /***************************************************************
@@ -259,8 +262,8 @@ function validateGroupStatus($user_to_be_checked, $group_user)
             return true;
         }
 
-        $query = "SELECT groups.name FROM users,groups WHERE users.username = ? " .
-                 "AND users.username = groups.user group by groups.name";
+        $query = "SELECT `groups`.`name` FROM `users`,`groups` WHERE users.username = ? " .
+                 "AND users.username = `groups`.`user` group by `groups`.`name`";
         $result = sqlStatement($query, array($user_to_be_checked));
 
         $usertbcGroups = array();
@@ -269,8 +272,8 @@ function validateGroupStatus($user_to_be_checked, $group_user)
             $usertbcGroups[] = $row[0];
         }
 
-        $query = "SELECT groups.name FROM users,groups WHERE users.username =  ? " .
-                 "AND users.username = groups.user group by groups.name";
+        $query = "SELECT `groups`.`name` FROM `users`,`groups` WHERE users.username =  ? " .
+                 "AND users.username = `groups`.`user` group by `groups`.`name`";
         $result = sqlStatement($query, array($group_user));
 
         $usergGroups = array();

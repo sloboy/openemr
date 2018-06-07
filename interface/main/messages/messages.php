@@ -373,13 +373,14 @@ if (!empty($_REQUEST['go'])) { ?>
                                 }
 
                                 ?>
-                                <input type='text' size='10' name='form_patient' class="form-control" style='width:150px;' value='<?php echo attr($patientname); ?>' readonly/>
+                                <input type='text' size='10' name='form_patient' id='form_patient' class="form-control" style='width:150px;' value='<?php echo attr($patientname); ?>' readonly/>
                                 <input type='hidden' class="form-control" name='reply_to' id='reply_to'
                                        value='<?php echo attr($reply_to); ?>'/>
 
                                 <?php
                                 if ($task=="addnew" || $result['pid']==0) {
-                                    echo '<input type="button" value="' . xla('Add Patient') . '" style="float: none; display: inline-block;" onclick="sel_patient()"/>';
+                                    echo '<input type="button" value="' . xla('Add Patient') . '" style="float: none; display: inline-block;" onclick="multi_sel_patient()"/>  ';
+                                    echo '<input type="button" id="clear_patients" style="float: none; display: inline-block;" value="' . xla("Clear") .'"/>';
                                 } ?>
                             </td>
                         </tr>
@@ -722,6 +723,12 @@ if (!empty($_REQUEST['go'])) { ?>
                 $("#assigned_to").val("");
                 $("#users").val("--");
             });
+
+            //clear inputs of patients
+            $("#clear_patients").click(function(){
+                $("#reply_to").val("");
+                $("#form_patient").val("");
+            });
         });
 
         var NewNote = function () {
@@ -812,9 +819,37 @@ if (!empty($_REQUEST['go'])) { ?>
             <?php } ?>
         }
 
+        // This is for callback by the multi_patients_finder popup.
+        function setMultiPatients(patientsList) {
+            var f = document.getElementById('new_note');
+            f.form_patient.value='';
+            f.reply_to.value='';
+            $.each(patientsList, function (key, patient) {
+                f.form_patient.value += patient.lname + ', ' + patient.fname + '; ';
+                f.reply_to.value += patient.pid + ';';
+            })
+
+            <?php if ($noteid) { ?>
+            //used when direct messaging service inserts a pnote with indeterminate patient
+            //to allow the user to assign the message to a patient.
+            top.restoreSession();
+            $("#task").val("savePatient");
+            $("#new_note").submit();
+            <?php } ?>
+        }
+
         // This invokes the find-patient popup.
         function sel_patient() {
             dlgopen('../../main/calendar/find_patient_popup.php', '_blank', 625, 400);
+        }
+
+        function multi_sel_patient() {
+            var url = '../../main/finder/multi_patients_finder.php'
+            // for edit selected list
+            if($('#reply_to').val() !== ''){
+                url = url+'?patients='+$('#reply_to').val();
+            }
+            dlgopen(url, '_blank', 625, 400);
         }
 
         function addtolist(sel) {

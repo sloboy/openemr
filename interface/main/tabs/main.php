@@ -59,12 +59,12 @@ function allFramesLoaded() {
 }
 
 function goRepeaterServices(){
-    top.restoreSession();
     // Ensure send the skip_timeout_reset parameter to not count this as a manual entry in the
     //  timing out mechanism in OpenEMR.
 
     // Send the skip_timeout_reset parameter to not count this as a manual entry in the
     //  timing out mechanism in OpenEMR.
+    top.restoreSession();
     $.post("<?php echo $GLOBALS['webroot']; ?>/library/ajax/dated_reminders_counter.php",
         { skip_timeout_reset: "1" },
         function(data) {
@@ -73,6 +73,7 @@ function goRepeaterServices(){
         }
     );
 
+    top.restoreSession();
     // run background-services
     $.post("<?php echo $GLOBALS['webroot']; ?>/library/ajax/execute_background_services.php",
         { skip_timeout_reset: "1", ajax: "1" }
@@ -165,14 +166,11 @@ $GLOBALS['allow_issue_menu_link'] = ((acl_check('encounters', 'notes', '', 'writ
         app_view_model.application_data.tabs.tabsList()[0].url(<?php echo json_encode("../".$_SESSION['frame1url']); ?>);
         app_view_model.application_data.tabs.tabsList()[0].name(<?php echo json_encode($_SESSION['frame1target']); ?>);
     <?php } ?>
-    <?php unset($_SESSION['frame1url']); ?>
-    <?php unset($_SESSION['frame1target']); ?>
+
     <?php if (!empty($_SESSION['frame2url']) && !empty($_SESSION['frame2target'])) { ?>
     app_view_model.application_data.tabs.tabsList()[1].url(<?php echo json_encode("../".$_SESSION['frame2url']); ?>);
     app_view_model.application_data.tabs.tabsList()[1].name(<?php echo json_encode($_SESSION['frame2target']); ?>);
     <?php } ?>
-    <?php unset($_SESSION['frame2url']); ?>
-    <?php unset($_SESSION['frame2target']); ?>
 
     app_view_model.application_data.user(new user_data_view_model(<?php echo json_encode($_SESSION{"authUser"})
         .',' . json_encode($userQuery['fname'])

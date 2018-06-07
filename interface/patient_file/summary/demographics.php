@@ -26,6 +26,7 @@ require_once("$srcdir/group.inc");
 require_once(dirname(__FILE__)."/../../../library/appointments.inc.php");
 
 use OpenEMR\Core\Header;
+use OpenEMR\Menu\PatientMenuRole;
 use OpenEMR\Reminder\BirthdayReminder;
 
 if (isset($_GET['set_pid'])) {
@@ -750,78 +751,37 @@ if ($GLOBALS['patient_id_category_name']) {
     $idcard_doc_id = get_document_by_catg($pid, $GLOBALS['patient_id_category_name']);
 }
 
+// Collect the patient menu then build it
+$menuPatient = new PatientMenuRole();
+$menu_restrictions = $menuPatient->getMenu();
 ?>
 <table cellspacing='0' cellpadding='0' border='0' class="subnav">
-  <tr>
-      <td class="small" colspan='4'>
-          <a href="../history/history.php" onclick='top.restoreSession()'>
-            <?php echo htmlspecialchars(xl('History'), ENT_NOQUOTES); ?></a>
-          |
-            <?php //note that we have temporarily removed report screen from the modal view ?>
-          <a href="../report/patient_report.php" onclick='top.restoreSession()'>
-            <?php echo htmlspecialchars(xl('Report'), ENT_NOQUOTES); ?></a>
-          |
-            <?php //note that we have temporarily removed document screen from the modal view ?>
-          <a href="../../../controller.php?document&list&patient_id=<?php echo $pid;?>" onclick='top.restoreSession()'>
-            <?php echo htmlspecialchars(xl('Documents'), ENT_NOQUOTES); ?></a>
-          |
-          <a href="../transaction/transactions.php" onclick='top.restoreSession()'>
-            <?php echo htmlspecialchars(xl('Transactions'), ENT_NOQUOTES); ?></a>
-          |
-          <a href="stats_full.php?active=all" onclick='top.restoreSession()'>
-            <?php echo htmlspecialchars(xl('Issues'), ENT_NOQUOTES); ?></a>
-          |
-          <a href="../../reports/pat_ledger.php?form=1&patient_id=<?php echo attr($pid);?>" onclick='top.restoreSession()'>
-            <?php echo xlt('Ledger'); ?></a>
-          |
-          <a href="../../reports/external_data.php" onclick='top.restoreSession()'>
-            <?php echo xlt('External Data'); ?></a>
-            <?php if ($GLOBALS['fhir_enable']) { ?>
-              |
-              <a href="" onclick='doPublish();return false;'>
-                <?php echo xlt('Publish'); ?></a>
-            <?php } ?>
-<!-- DISPLAYING HOOKS STARTS HERE -->
-<?php
-    $module_query = sqlStatement("SELECT msh.*,ms.obj_name,ms.menu_name,ms.path,m.mod_ui_name,m.type FROM modules_hooks_settings AS msh
-					LEFT OUTER JOIN modules_settings AS ms ON obj_name=enabled_hooks AND ms.mod_id=msh.mod_id
-					LEFT OUTER JOIN modules AS m ON m.mod_id=ms.mod_id
-					WHERE fld_type=3 AND mod_active=1 AND sql_run=1 AND attached_to='demographics' ORDER BY mod_id");
-    $DivId = 'mod_installer';
-    if (sqlNumRows($module_query)) {
-        $jid    = 0;
-        $modid  = '';
-        while ($modulerow = sqlFetchArray($module_query)) {
-            $DivId      = 'mod_'.$modulerow['mod_id'];
-            $new_category   = $modulerow['mod_ui_name'];
-            $modulePath     = "";
-            $added          = "";
-            if ($modulerow['type'] == 0) {
-                $modulePath     = $GLOBALS['customModDir'];
-                $added      = "";
-            } else {
-                $added      = "index";
-                $modulePath     = $GLOBALS['zendModDir'];
-            }
+    <tr>
+        <td class="small" colspan='4'>
 
-            if (!acl_check('admin', 'super') && !zh_acl_check($_SESSION['authUserID'], $modulerow['obj_name'])) {
-                continue;
+            <?php
+            $first = true;
+            foreach ($menu_restrictions as $key => $value) {
+                if (!empty($value->children)) {
+                    // flatten to only show children items
+                    foreach ($value->children as $children_key => $children_value) {
+                        if (!$first) {
+                            echo "|";
+                        }
+                        $first = false;
+                        $link = ($children_value->pid != "true") ? $children_value->url : $children_value->url . attr($pid);
+                        echo '<a href="' . $link . '" onclick="' . $children_value->on_click .'"> ' . text($children_value->label) . ' </a>';
+                    }
+                } else {
+                    if (!$first) {
+                        echo "|";
+                    }
+                    $first = false;
+                    $link = ($value->pid != "true") ? $value->url : $value->url . attr($pid);
+                    echo '<a href="' . $link . '" onclick="' . $value->on_click .'"> ' . text($value->label) . ' </a>';
+                }
             }
-
-            $relative_link  = "../../modules/".$modulePath."/".$modulerow['path'];
-            $nickname   = $modulerow['menu_name'] ? $modulerow['menu_name'] : 'Noname';
-            $jid++;
-            $modid = $modulerow['mod_id'];
             ?>
-            |
-            <a href="<?php echo $relative_link; ?>" onclick='top.restoreSession()'>
-            <?php echo xlt($nickname); ?></a>
-        <?php
-        }
-    }
-    ?>
-<!-- DISPLAYING HOOKS ENDS HERE -->
-
         </td>
     </tr>
 </table> <!-- end header -->
@@ -1786,18 +1746,29 @@ foreach ($photos as $photo_doc_id) {
 
         if ($resNotNull) { //////
             if ($count < 1) {
-                echo "&nbsp;&nbsp;" . htmlspecialchars(xl('None'), ENT_NOQUOTES);
+                echo "&nbsp;&nbsp;" . htmlspecialchars(xl('No Appointments'), ENT_NOQUOTES);
             } else { //////
                 if ($extraApptDate) {
                     echo "<div style='color:#0000cc;'><b>" . attr($extraApptDate) . " ( + ) </b></div>";
-                } else {
-                    echo "<div><hr></div>";
                 }
             }
-
+            // Show Recall if one exists
+            $query = sqlStatement("SELECT * FROM medex_recalls WHERE r_pid = ?", array($pid));
+            
+            while ($result2 = sqlFetchArray($query)) {
+                //tabYourIt('recall', 'main/messages/messages.php?go=' + choice);
+                //parent.left_nav.loadFrame('1', tabNAME, url);
+                echo "&nbsp;&nbsp<b>Recall: <a onclick=\"top.left_nav.loadFrame('1', 'rcb', '../interface/main/messages/messages.php?go=addRecall');\">" . text(oeFormatShortDate($result2['r_eventDate'])). " (". text($result2['r_reason']).") </a></b>";
+                $count2++;
+            }
+            //if there is no appt and no recall
+            if (($count < 1) && ($count2 < 1)) {
+                echo "<br /><br />&nbsp;&nbsp;<a onclick=\"top.left_nav.loadFrame('1', 'rcb', '../interface/main/messages/messages.php?go=addRecall');\">".xlt('No Recall')."</a>";
+            }
+            $count =0;
             echo "</div>";
         }
-    } // End of Appointments.
+    } // End of Appointments Widget.
 
 
     /* Widget that shows recurrences for appointments. */
@@ -1819,19 +1790,19 @@ foreach ($photos as $photo_doc_id) {
 
          //Fetch patient's recurrences. Function returns array with recurrence appointments' category, recurrence pattern (interpreted), and end date.
          $recurrences = fetchRecurrences($pid);
-        if ($recurrences[0] == false) { //if there are no recurrent appointments:
+        if (empty($recurrences)) { //if there are no recurrent appointments:
             echo "<div>";
             echo "<span>" . "&nbsp;&nbsp;" . xlt('None') . "</span>";
             echo "</div></div>";
         } else {
             foreach ($recurrences as $row) {
                 //checks if there are recurrences and if they are current (git didn't end yet)
-                if ($row == false || !recurrence_is_current($row['pc_endDate'])) {
+                if (!recurrence_is_current($row['pc_endDate'])) {
                     continue;
                 }
 
                 echo "<div>";
-                echo "<span>" . xlt('Appointment Category') . ': ' . xlt($row['pc_catname']) . "</span>";
+                echo "<span>" . xlt('Appointment Category') . ": <b>" . xlt($row['pc_catname']) . "</b></span>";
                 echo "<br>";
                 echo "<span>" . xlt('Recurrence') . ': ' . text($row['pc_recurrspec']) . "</span>";
                 echo "<br>";

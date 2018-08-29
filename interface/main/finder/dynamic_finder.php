@@ -31,11 +31,11 @@ while ($row = sqlFetchArray($res)) {
     if (!acl_check('patients', 'p_list') && $colname=='providerID') {
         $header0 .= "   <td align='center'><input type='text' size='10' disabled ";
         $header0 .= "value='' class='search_init' STYLE=' background-color: #CCCCCC'/></td>\n";
-    }
-        else{
+    } 
+    else{
         $header0 .= "   <td align='center'><input type='text' size='10' ";
         $header0 .= "value='' class='search_init' /></td>\n";
-    }
+    } 
     
     
     

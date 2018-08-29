@@ -1620,7 +1620,7 @@ if ($_GET['group']==true &&  $have_group_global_enabled) {
   </td>
  </tr>
 <?php
-    }
+}
 ?>
  <tr>
   <td nowrap>

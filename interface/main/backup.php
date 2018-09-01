@@ -32,6 +32,10 @@ require_once("../globals.php");
 require_once("$srcdir/acl.inc");
 require_once("$srcdir/log.inc");
 
+// Prevent scripts calling Globals from being blocked.
+//
+session_write_close();
+
 if (!extension_loaded('zlib')) {
       die('Abort '.basename(__FILE__).' : Missing zlib extensions');
 }
@@ -105,7 +109,22 @@ if ($form_step == 6) {
     header("Content-Length: " . filesize($TAR_FILE_PATH));
     header("Content-Disposition: attachment; filename=" . basename($TAR_FILE_PATH));
     header("Content-Description: File Transfer");
-    readfile($TAR_FILE_PATH);
+
+    if (is_file($TAR_FILE_PATH)) {
+        $chunkSize = 1024 * 1024;
+        $handle = fopen($TAR_FILE_PATH, 'rb');
+        while (!feof($handle)) {
+            $buffer = fread($handle, $chunkSize);
+            echo $buffer;
+            ob_flush();
+            flush();
+        }
+        fclose($handle);
+    } else {
+        obliterate_dir($BACKUP_DIR);
+        $dieMsg = xlt("Backup Failed missing generated file");
+        die($dieMsg);
+    }
     unlink($TAR_FILE_PATH);
     obliterate_dir($BACKUP_DIR);
     exit(0);

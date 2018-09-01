@@ -586,6 +586,7 @@ foreach (explode(',', $given) as $item) {
           }
           .issues {
             font-size:0.8em;
+            text-align: center;
           }
          select {
             text-align: left;
@@ -594,8 +595,10 @@ foreach (explode(',', $given) as $item) {
             border-radius: 4px;
             margin:1px 3px 1px 5px;
             box-sizing: border-box;
-            width:90%;
-
+            width:80%;
+         }
+         #form_comments {
+             height: 22px;
          }
          .navy {
           background-color: navy !important;
@@ -662,11 +665,11 @@ foreach (explode(',', $given) as $item) {
             echo $HELLO['POH'].$HELLO['POS'].$HELLO['PMH'].$HELLO['Medication'].$HELLO['Surgery'].$HELLO['Allergy'].$HELLO['FH'].$HELLO['SOCH'].$HELLO['ROS'];
             ?>
         </div>
-      <div class="borderShadow" style="text-align:left;margin-top:7px;width:98%;">
+      <div class="borderShadow" style="text-align:left;">
         <table  border='0' width='100%'>
           <tr id='row_quick_picks'>
             <td valign='top' nowrap>&nbsp;</td>
-            <td valign='top'  colspan="2">
+            <td valign='top'  colspan="1">
               <select name='form_titles' size='7' onchange='top.restoreSession();set_text();'>
               </select>
             </td>
@@ -859,8 +862,9 @@ foreach (explode(',', $given) as $item) {
                 ?>
               <style>
                 .data td{
-                    font-size:0.7em;
+                    font-size:10px;
                     min-width:40px;
+                    padding: 0px 3px;
                 }
                 .data input[type="text"] {
                  width:90px;
@@ -883,7 +887,7 @@ foreach (explode(',', $given) as $item) {
                   </tr>
                   <tr>
                     <td></td>
-                    <td colspan="2">
+                    <td>
                       <select name="form_tobacco" id="form_tobacco" onchange="radioChange(this.options[this.selectedIndex].value)" title="<?php xla('Tobacco use'); ?>">
                         <option value="" <?php if ($result2['tobacco']['reslist'] =='') {
                             echo "selected";
@@ -1087,14 +1091,13 @@ foreach (explode(',', $given) as $item) {
                         <td class="text"><input type="radio" name="radio_hazardous_activities" id="radio_hazardous_activities[quit]" value="quithazardous_activities" <?php if ($PMSFH[0]['SOCH']['hazardous_activities']['restype'] =='quithazardous_activities') {
                             echo "checked";
 } ?>><?php echo xlt('Quit') ?>&nbsp;</td>
-                        <td class="text"><input type="text" size="6" class="datepicker" name="date_hazardous_activities" id="date_hazardous_activities" value="" title="<?php echo xla('Hazardous activities') ?>"> </td>
+                        <td class="text"><input type="text" size="6" class="datepicker" name="date_hazardous_activities" id="date_hazardous_activities" value="" title="<?php echo xla('Hazardous activities') ?>">&nbsp;</td>
                         <td class="text-center"><input type="radio" name="radio_hazardous_activities" id="radio_hazardous_activities[never]" value="neverhazardous_activities" <?php if ($PMSFH[0]['SOCH']['hazardous_activities']['restype'] =='neverhazardous_activities') {
                             echo "checked";
 } ?>></td>
                         <td class="text-center"><input name="radio_hazardous_activities" type="radio" id="radio_hazardous_activities[not_applicable]" <?php if ($PMSFH[0]['SOCH']['hazardous_activities']['restype'] =='not_applicable') {
                             echo "checked";
-} ?> value="not_applicablehazardous_activities" onclick="hazardous_activities_statusClicked(this)">
-                        </td>
+} ?> value="not_applicablehazardous_activities" onclick="hazardous_activities_statusClicked(this)"></td>
                         </tr>
                         </tbody>
                       </table>

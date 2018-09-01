@@ -28,6 +28,9 @@ $limit = '';
 if ($iDisplayStart >= 0 && $iDisplayLength >= 0) {
     $limit = "LIMIT " . escape_limit($iDisplayStart) . ", " . escape_limit($iDisplayLength);
 }
+// Search parameter.  -1 means .
+//
+$searchMethodInPatientList = isset($_GET['searchType' ]) && $_GET['searchType' ]==="true" ?  true : false;
 
 // Column sorting parameters.
 //
@@ -57,11 +60,20 @@ if (isset($_GET['sSearch']) && $_GET['sSearch'] !== "") {
     foreach ($aColumns as $colname) {
         $where .= $where ? "OR " : "WHERE ( ";
         if ($colname == 'name') {
-            $where .=
-            "lname LIKE '$sSearch%' OR " .
-            "fname LIKE '$sSearch%' OR " .
-            "mname LIKE '$sSearch%' ";
-        } else {
+            if ($searchMethodInPatientList) { // exact search
+                $where .=
+                    "lname LIKE '$sSearch' OR " .
+                    "fname LIKE '$sSearch' OR " .
+                    "mname LIKE '$sSearch' ";
+            } else {
+                $where .= // like search
+                    "lname LIKE '$sSearch%' OR " .
+                    "fname LIKE '$sSearch%' OR " .
+                    "mname LIKE '$sSearch%' ";
+            }
+        } elseif ($searchMethodInPatientList) {
+            $where .= "`" . escape_sql_column_name($colname, array('patient_data')) . "` LIKE '$sSearch' ";
+        } else { // exact search
             $where .= "`" . escape_sql_column_name($colname, array('patient_data')) . "` LIKE '$sSearch%' ";
         }
     }
@@ -82,12 +94,21 @@ for ($i = 0; $i < count($aColumns); ++$i) {
         $where .= $where ? ' AND' : 'WHERE';
         $sSearch = add_escape_custom($_GET["sSearch_$i"]);
         if ($colname == 'name') {
-            $where .= " ( " .
-            "lname LIKE '$sSearch%' OR " .
-            "fname LIKE '$sSearch%' OR " .
-            "mname LIKE '$sSearch%' )";
+            if ($searchMethodInPatientList) { // like search
+                $where .= " ( " .
+                    "lname LIKE '$sSearch%' OR " .
+                    "fname LIKE '$sSearch%' OR " .
+                    "mname LIKE '$sSearch%' )";
+            } else {  // exact search
+                $where .= " ( " .
+                    "lname LIKE '$sSearch' OR " .
+                    "fname LIKE '$sSearch' OR " .
+                    "mname LIKE '$sSearch' )";
+            }
+        } elseif ($searchMethodInPatientList) {
+            $where .= " `" . escape_sql_column_name($colname, array('patient_data')) . "` LIKE '$sSearch%'"; // like search
         } else {
-            $where .= " `" . escape_sql_column_name($colname, array('patient_data')) . "` LIKE '$sSearch%'";
+            $where .= " `" . escape_sql_column_name($colname, array('patient_data')) . "` LIKE '$sSearch'"; // exact search
         }
     }
 }
@@ -131,10 +152,10 @@ $iFilteredTotal = $row['count'];
 // Build the output data array.
 //
 $out = array(
-  "sEcho"                => intval($_GET['sEcho']),
-  "iTotalRecords"        => $iTotal,
-  "iTotalDisplayRecords" => $iFilteredTotal,
-  "aaData"               => array()
+    "sEcho"                => intval($_GET['sEcho']),
+    "iTotalRecords"        => $iTotal,
+    "iTotalDisplayRecords" => $iFilteredTotal,
+    "aaData"               => array()
 );
 
 // save into variable data about fields of 'patient_data' from 'layout_options'

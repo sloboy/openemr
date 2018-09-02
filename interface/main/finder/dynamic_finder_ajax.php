@@ -37,13 +37,13 @@ if (isset($_GET['iSortCol_0'])) {
         $iSortCol = intval($_GET["iSortCol_$i"]);
         if ($_GET["bSortable_$iSortCol"] == "true") {
             $sSortDir = escape_sort_order($_GET["sSortDir_$i"]); // ASC or DESC
-            // We are to sort on column # $iSortCol in direction $sSortDir.
+      // We are to sort on column # $iSortCol in direction $sSortDir.
             $orderby .= $orderby ? ', ' : 'ORDER BY ';
-            //
+      //
             if ($aColumns[$iSortCol] == 'name') {
-                $orderby .= "lname $sSortDir, fname $sSortDir, mname $sSortDir";
+                    $orderby .= "lname $sSortDir, fname $sSortDir, mname $sSortDir";
             } else {
-                $orderby .= "`" . escape_sql_column_name($aColumns[$iSortCol], array('patient_data')) . "` $sSortDir";
+                    $orderby .= "`" . escape_sql_column_name($aColumns[$iSortCol], array('patient_data')) . "` $sSortDir";
             }
         }
     }
@@ -95,7 +95,7 @@ $authID = $_SESSION['authId'];
 //dh 8/27/2018
 //add filter for provider column
 //need to add aclcheck for admin and globals check for only own patients list
-if (!acl_check('patients', 'p_list') ) {
+if (!acl_check('patients', 'p_list')){
     $where .= $where ? ' AND' : 'WHERE';
     $where .= " `" . escape_sql_column_name("providerID", array('patient_data')) . "` = '$authID'";
 }
@@ -148,7 +148,7 @@ while ($row = sqlFetchArray($res)) {
 $query = "SELECT $sellist FROM patient_data $where $orderby $limit";
 $res = sqlStatement($query);
 while ($row = sqlFetchArray($res)) {
-    // Each <tr> will have an ID identifying the patient.
+  // Each <tr> will have an ID identifying the patient.
     $arow = array('DT_RowId' => 'pid_' . $row['pid']);
     foreach ($aColumns as $colname) {
         if ($colname == 'name') {
@@ -171,7 +171,7 @@ while ($row = sqlFetchArray($res)) {
         }
     }
 
-        $out['aaData'][] = $arow;
+    $out['aaData'][] = $arow;
 }
 
 // error_log($query); // debugging

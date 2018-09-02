@@ -986,9 +986,9 @@ if (empty($collectthis)) {
         if ($arow) {
             echo('field exists');
             $prow = sqlQuery("SELECT lname, fname, phone_home, phone_biz, DOB, patient_type " .
-                "FROM patient_data WHERE pid = ?", array($patientid));
+    "FROM patient_data WHERE pid = ?", array($patientid));
             $arow = sqlQuery("Select pc_catid from openemr_postcalendar_categories where " .
-                "pc_constant_id = ?", array($prow['patient_type']));
+    "pc_constant_id = ?", array($prow['patient_type']));
             
             $patientname = $prow['lname'] . ", " . $prow['fname'];
             $default_catid = $arow['pc_catid'];
@@ -1355,7 +1355,7 @@ var weekDays = new Array(
             s = document.forms[0].form_provider.options[s.selectedIndex].value;
             f = document.forms[0].facility.options[f.selectedIndex].value;
         <?php
-}?>
+    }?>
         var c = document.forms[0].form_category;
         var formDate = document.forms[0].form_date;
         let title = '<?php echo xlt('Available Appointments Calendar'); ?>';
@@ -1391,7 +1391,7 @@ if ($_POST["resname"]=="noresult") {
 			// Close the window
 			dlgclose();
 </script>';
-}
+    }
 
 $classprov='current';
 $classpati='';

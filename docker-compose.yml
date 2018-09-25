@@ -10,6 +10,8 @@ services:
     restart: always
     image: mariadb:10.2
     command: ['mysqld','--character-set-server=utf8']
+    ports:
+    - 3306:3306
     volumes:
     - databasevolume:/var/lib/mysql
     environment:
@@ -44,7 +46,7 @@ services:
       MYSQL_PASS: openemr
       OE_USER: admin
       OE_PASS: pass
-      FLEX_REPOSITORY: https://github.com/openemr/openemr.git
+      FLEX_REPOSITORY: https://github.com/sloboy/openemr.git
       FLEX_REPOSITORY_BRANCH: master
       EASY_DEV_MODE: "yes"
     depends_on:

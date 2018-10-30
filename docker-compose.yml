@@ -8,24 +8,16 @@ version: '3.1'
 services:
   mysql:
     restart: always
-<<<<<<< HEAD
     image: mysql:5.7
-=======
-    image: mariadb:10.2
->>>>>>> origin/master
     command: ['mysqld','--character-set-server=utf8']
     ports:
     - 8320:3306
     volumes:
     - databasevolume:/var/lib/mysql
     environment:
-<<<<<<< HEAD
       MYSQL_ROOT_PASSWORD: wtr&5YU
     ports:
     - 3307:3306
-=======
-      MYSQL_ROOT_PASSWORD: root
->>>>>>> origin/master
   openemr:
     restart: always
     # use an image if you're not changing the build steps:
@@ -51,7 +43,6 @@ services:
     - ccdamodule:/var/www/localhost/htdocs/openemr/ccdaservice:rw
     environment:
       MYSQL_HOST: mysql
-<<<<<<< HEAD
       MYSQL_ROOT_PASS: wtr&5YU
       MYSQL_USER: derek
       MYSQL_PASS: Qa@er5t
@@ -61,34 +52,3 @@ services:
       #EMAIL: dhillison@gmail.com
     links:
     - mysql
-=======
-      MYSQL_ROOT_PASS: root
-      MYSQL_USER: openemr
-      MYSQL_PASS: openemr
-      OE_USER: admin
-      OE_PASS: pass
-      FLEX_REPOSITORY: https://github.com/openemr/openemr.git
-      FLEX_REPOSITORY_BRANCH: master
-      EASY_DEV_MODE: "yes"
-    depends_on:
-    - mysql
-  phpmyadmin:
-    restart: always
-    image: phpmyadmin/phpmyadmin
-    ports:
-    - 8310:80
-    environment:
-      PMA_HOSTS: mysql
-volumes:
-  databasevolume: {}
-  assetsvolume01: {}
-  cachevolume01: {}
-  cachevolume02: {}
-  cachevolume03: {}
-  configvolume01: {}
-  configvolume02: {}
-  logvolume01: {}
-  nodemodules: {}
-  vendordir: {}
-  ccdamodule: {}
->>>>>>> origin/master

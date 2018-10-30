@@ -39,8 +39,17 @@ while ($row = sqlFetchArray($res)) {
     $header .= "   <th>";
     $header .= text($title);
     $header .= "</th>\n";
-    $header0 .= "   <td ><input type='text' size='20' ";
-    $header0 .= "value='' class='search_init' placeholder='".xla("Search by"). " " . $title1 ."'/></td>\n";
+    //dh 10/30/2018 check for acl to list only logged in users patients
+    //only change if the column is provider and the acl is set.  Also disable
+    //the input box and turn it grey
+    if (!acl_check('patients', 'p_list') && $colname=='providerID') {
+        $header0 .= "   <td align='center'><input type='text' size='10' disabled ";
+        $header0 .= "value='' class='search_init' STYLE=' background-color: #CCCCCC'/></td>\n";
+    }
+        else{
+        $header0 .= "   <td align='center'><input type='text' size='10' ";
+        $header0 .= "value='' class='search_init' /></td>\n";
+    }
     if ($coljson) {
         $coljson .= ", ";
     }

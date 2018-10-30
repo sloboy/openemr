@@ -15,6 +15,7 @@
 
 require_once("../../globals.php");
 require_once($GLOBALS['srcdir']."/options.inc.php");
+//dh 8/27/2018 check for acl to list only logged in users patients
 
 if (!verifyCsrfToken($_GET["csrf_token_form"])) {
     csrfNotVerified();

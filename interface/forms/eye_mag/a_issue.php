@@ -79,8 +79,8 @@ if (!empty($irow['type'])) {
     }
 }
 
-$given="ROSGENERAL,ROSHEENT,ROSCV,ROSPULM,ROSGI,ROSGU,ROSDERM,ROSNEURO,ROSPSYCH,ROSMUSCULO,ROSIMMUNO,ROSENDOCRINE";
-$query="SELECT $given from form_eye_mag where id=? and pid=?";
+$given="ROSGENERAL,ROSHEENT,ROSCV,ROSPULM,ROSGI,ROSGU,ROSDERM,ROSNEURO,ROSPSYCH,ROSMUSCULO,ROSIMMUNO,ROSENDOCRINE,ROSCOMMENTS";
+$query="SELECT $given from form_eye_ros where id=? and pid=?";
 $rres = sqlQuery($query, array($form_id,$pid));
 foreach (explode(',', $given) as $item) {
     $$item = $rres[$item];
@@ -547,13 +547,13 @@ foreach (explode(',', $given) as $item) {
     </script>
     <!-- Add Font stuff for the look and feel.  -->
 
-      <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/bootstrap-3-3-4/dist/css/bootstrap.min.css">
+      <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/bootstrap/dist/css/bootstrap.min.css">
       <link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
-      <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-ui-1-11-4/themes/excite-bike/jquery-ui.css">
-      <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.min.css">
-      <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/pure-0-5-0/pure-min.css">
-      <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/qtip2-2-2-1/jquery.qtip.min.css" />
-      <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/font-awesome-4-6-3/css/font-awesome.min.css">
+      <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-ui-themes-1-11-4/themes/excite-bike/jquery-ui.css">
+      <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.min.css">
+      <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/pure/0.5.0/pure-min.css">
+      <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/manual-added-packages/qtip2-2-2-1/jquery.qtip.min.css" />
+      <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/font-awesome/css/font-awesome.min.css">
       <link rel="stylesheet" href="../../forms/<?php echo $form_folder; ?>/css/style.css" type="text/css">
       <style>
           td, select, textarea, input  {
@@ -586,6 +586,8 @@ foreach (explode(',', $given) as $item) {
           }
           .issues {
             font-size:0.8em;
+            text-align: center;
+              width:500px;
           }
          select {
             text-align: left;
@@ -594,8 +596,10 @@ foreach (explode(',', $given) as $item) {
             border-radius: 4px;
             margin:1px 3px 1px 5px;
             box-sizing: border-box;
-            width:90%;
-
+            width:80%;
+         }
+         #form_comments {
+             height: 22px;
          }
          .navy {
           background-color: navy !important;
@@ -604,12 +608,12 @@ foreach (explode(',', $given) as $item) {
       </style>
 
       <link rel="shortcut icon" href="<?php echo $GLOBALS['images_static_relative']; ?>/favicon.ico" />
-      <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-min-1-10-2/index.js"></script>
-      <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/bootstrap-3-3-4/dist/js/bootstrap.min.js"></script>
+      <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-1-10-2/jquery.js"></script>
+      <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/bootstrap/dist/js/bootstrap.min.js"></script>
       <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-ui-1-11-4/jquery-ui.min.js"></script>
-      <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/qtip2-2-2-1/jquery.qtip.min.js"></script>
+      <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/manual-added-packages/qtip2-2-2-1/jquery.qtip.min.js"></script>
       <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative'] ?>/manual-added-packages/shortcut.js-2-01-B/shortcut.js"></script>
-      <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.full.min.js"></script>
+      <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.full.min.js"></script>
       <script type="text/javascript" src="<?php echo $GLOBALS['webroot']; ?>/interface/forms/<?php echo $form_folder; ?>/js/eye_base.php?enc=<?php echo attr($encounter); ?>&providerID=<?php echo attr($providerID); ?>"></script>
   </head>
   <body>
@@ -662,11 +666,11 @@ foreach (explode(',', $given) as $item) {
             echo $HELLO['POH'].$HELLO['POS'].$HELLO['PMH'].$HELLO['Medication'].$HELLO['Surgery'].$HELLO['Allergy'].$HELLO['FH'].$HELLO['SOCH'].$HELLO['ROS'];
             ?>
         </div>
-      <div class="borderShadow" style="text-align:left;margin-top:7px;width:98%;">
+      <div class="borderShadow" style="text-align:left;">
         <table  border='0' width='100%'>
           <tr id='row_quick_picks'>
             <td valign='top' nowrap>&nbsp;</td>
-            <td valign='top'  colspan="2">
+            <td valign='top'  colspan="1">
               <select name='form_titles' size='7' onchange='top.restoreSession();set_text();'>
               </select>
             </td>
@@ -859,8 +863,9 @@ foreach (explode(',', $given) as $item) {
                 ?>
               <style>
                 .data td{
-                    font-size:0.7em;
+                    font-size:10px;
                     min-width:40px;
+                    padding: 0px 3px;
                 }
                 .data input[type="text"] {
                  width:90px;
@@ -883,7 +888,7 @@ foreach (explode(',', $given) as $item) {
                   </tr>
                   <tr>
                     <td></td>
-                    <td colspan="2">
+                    <td>
                       <select name="form_tobacco" id="form_tobacco" onchange="radioChange(this.options[this.selectedIndex].value)" title="<?php xla('Tobacco use'); ?>">
                         <option value="" <?php if ($result2['tobacco']['reslist'] =='') {
                             echo "selected";
@@ -1087,14 +1092,13 @@ foreach (explode(',', $given) as $item) {
                         <td class="text"><input type="radio" name="radio_hazardous_activities" id="radio_hazardous_activities[quit]" value="quithazardous_activities" <?php if ($PMSFH[0]['SOCH']['hazardous_activities']['restype'] =='quithazardous_activities') {
                             echo "checked";
 } ?>><?php echo xlt('Quit') ?>&nbsp;</td>
-                        <td class="text"><input type="text" size="6" class="datepicker" name="date_hazardous_activities" id="date_hazardous_activities" value="" title="<?php echo xla('Hazardous activities') ?>"> </td>
+                        <td class="text"><input type="text" size="6" class="datepicker" name="date_hazardous_activities" id="date_hazardous_activities" value="" title="<?php echo xla('Hazardous activities') ?>">&nbsp;</td>
                         <td class="text-center"><input type="radio" name="radio_hazardous_activities" id="radio_hazardous_activities[never]" value="neverhazardous_activities" <?php if ($PMSFH[0]['SOCH']['hazardous_activities']['restype'] =='neverhazardous_activities') {
                             echo "checked";
 } ?>></td>
                         <td class="text-center"><input name="radio_hazardous_activities" type="radio" id="radio_hazardous_activities[not_applicable]" <?php if ($PMSFH[0]['SOCH']['hazardous_activities']['restype'] =='not_applicable') {
                             echo "checked";
-} ?> value="not_applicablehazardous_activities" onclick="hazardous_activities_statusClicked(this)">
-                        </td>
+} ?> value="not_applicablehazardous_activities" onclick="hazardous_activities_statusClicked(this)"></td>
                         </tr>
                         </tbody>
                       </table>
@@ -1309,7 +1313,11 @@ foreach (explode(',', $given) as $item) {
 } ?>>
               <input type="text" name="ROSENDOCRINE" id="ROSENDOCRINE" onclick='clear_option(this)' value="<?php echo attr($ROSENDOCRINE); ?>"></td>
             </tr>
-          <tr><td></td></tr>
+            <tr>
+                <td colspan="4"><label>Comments:</label><br />
+                    <textarea name="ROSCOMMENTS" id="ROSCOMMENTS" ><?php echo text($ROSCOMMENTS); ?></textarea>
+                </td>
+            </tr>
         </table>
         <table id="row_PLACEHOLDER" name="row_PLACEHOLDER" width="90%">
           <tr>

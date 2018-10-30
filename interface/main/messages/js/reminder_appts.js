@@ -12,7 +12,7 @@ var labels = [];
 var postcards = [];
 var show_just;
 
-/*
+/**
  * Function to find a patient in the DB
  * This pop-up is the standard openEMR file find_patient_popup.php
  * It returns pid, lname, fname, dob to function "setpatient" below
@@ -22,14 +22,21 @@ function recall_name_click(field) {
     dlgopen('../../main/calendar/find_patient_popup.php?pflag=0', '_blank', 500, 400);
 }
 
-/*
+/**
  * Function to insert patient data into addRecall fields
  * pid is sent to server for the data to display
  */
 function setpatient(pid, lname, fname, dob) {
-    var f = document.forms['addRecall'];
-    f.new_recall_name.value = lname + ', ' + fname;//+ '&nbsp; ('+dob+')'+''+pid;
-                                                   //go get the rest of the data
+    if (lname==null){
+        lname='';
+    }
+    if (fname==null){
+        fname='';
+    }
+    if (dob==null){
+        dob='';
+    }
+
     top.restoreSession();
     $.ajax({
         type: "POST",
@@ -48,7 +55,7 @@ function setpatient(pid, lname, fname, dob) {
             var dolv = moment(obj.DOLV); // another date
             var duration = dolv.diff(now, 'days');
             if (duration > '0') { //it's a future appt dude!
-                alert(xljs_NOTE + ': ' + xljs_PthsApSched + ' ' + obj.DOLV + '...');
+                alert(xljs_NOTE + ': ' + xljs_PthsApSched + ' ' + obj.DOLV );
             }
         }
         $(".news").removeClass('nodisplay');
@@ -86,7 +93,10 @@ function setpatient(pid, lname, fname, dob) {
         //not sure where it is though... or if we can use it here.
         $("#new_age").html(obj.age + ' years old');
         $("#new_reason").val(obj.PLAN);
-
+        $("#new_recall_name").val(obj.lname + ', ' + obj.fname);
+        $("#form_recall_date").val(obj.recall_date);
+        $("#new_provider").val(obj.provider).change();
+        $("#new_facility").val(obj.facility).change();
     });
 }
 
@@ -102,7 +112,7 @@ function add_this_recall(e) {
         return false;
     } else {
         var url = "save.php";
-        formData = $.toJSON($("form#addRecall").serialize());
+        formData = JSON.stringify($("form#addRecall").serialize());
         top.restoreSession();
         $.ajax({
             type: 'POST',
@@ -116,7 +126,7 @@ function add_this_recall(e) {
     }
 }
 
-/*
+/**
  * This function is called when a preference is changed
  */
 function save_preferences(event) {
@@ -166,13 +176,13 @@ function checkAll(chk, set) {
 /**
  * This function sends a list of checked items to the server for processing.
  */
-function process_this(material, id, eid='') {
+function process_this(material, id, eid) {
+    if (eid==null){
+        eid='';
+    }
     var make_this = [];
     var make_that = [];
     var make_all = [];
-    //if this is checked then do this...
-    //name="msg_phone" id="msg_phone_'.$recall['pid'].'"
-    //if ($("msg_"+material+"_"+id.checked == false)) return;
     if ((material === "phone") || (material === "notes")) {  //we just checked a phone box or left/blurred away from a notes field
         make_this.push(id);
         make_that.push(eid);
@@ -218,10 +228,7 @@ function process_this(material, id, eid='') {
             } else {
                 $("#msg_phone_" + r_uid).append('<br />' + dateval);
             }
-            //var present = $("#msg_notes_"+r_uid).val();
-            // $("#msg_notes_"+r_uid).val(present+" "+material+" printed.\n");
-            //$("#msg_notes_"+r_uid).focus();
-        });
+         });
     });
     //
 
@@ -264,7 +271,6 @@ $(function () {
 function newEvt(pid, pc_eid) {
     var f = document.forms[0];
     var url = '../../main/calendar/add_edit_event.php?patientid=' + pid + '&eid=' + pc_eid;
-    //    if (f.ProviderID && f.ProviderID.value) {url += '&userid=' + parseInt(f.ProviderID.value);}
     dlgopen(url, '_blank', 800, 480);
     return false;
 }
@@ -316,7 +322,10 @@ function goMedEx() {
 
 /****  END FUNCTIONS RELATED TO NAVIGATION *****/
 
-function show_this(colorish='') {
+function show_this(colorish) {
+    if (colorish==null){
+        colorish='';
+    }
     var facV = $("#form_facility").val();
     var provV = $("#form_provider").val();
     var pidV = $("#form_patient_id").val();
@@ -337,7 +346,6 @@ function show_this(colorish='') {
             meets_pname = true;
         }
         meets_color = (colorish === '') || (colorish == d.status );
-        //alert(meets_fac +' = '+ meets_prov +' = '+ meets_pid +' = '+ meets_pname +' = '+ meets_color);
         return meets_fac && meets_prov && meets_pid && meets_pname && meets_color;
     }).show('4000', 'linear');
 }

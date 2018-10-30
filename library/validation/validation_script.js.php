@@ -29,7 +29,7 @@
 /*Other pages depend if the page in the lists options (page validation)is active and exists)*/
 if ($use_validate_js) {
 ?>
-    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative'] ?>/moment-2-13-0/moment.js"></script>
+    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative'] ?>/moment/moment.js"></script>
     <script type="text/javascript" src="<?php echo $GLOBALS['rootdir'] ?>/../library/js/vendors/validate/validate_modified.js"></script>
     <script type="text/javascript" src="<?php echo $GLOBALS['rootdir'] ?>/../library/js/vendors/validate/validate_extend.js"></script>
 <?php
@@ -158,7 +158,9 @@ function submitme(new_validate,e,form_id, constraints) {
                     }
                 }
                 //show error message
-                var error_msg = getErrorMessage(message);
+                //Validate.js enables to overwrite the error messages by adding 'message' to constraints json. if you want to use your custom message instead
+                //default message you need to add boolean property to the constraints json - 'custom_messages':true.
+                var error_msg = (typeof constraints.custom_messages !== 'undefined' && constraints.custom_messages) ? message : getErrorMessage(message);
 
                 var title= $(input).attr('title');
                 //if it's long title remove it from error message (this could destroy the UI)
@@ -238,6 +240,12 @@ function submitme(new_validate,e,form_id, constraints) {
                         return '<?php echo xla('Required field missing: Please enter the First name');?>';
                     case 'Required field missing: Please enter the Last name':
                         return '<?php echo xla('Required field missing: Please enter the Last name');?>';
+                    case 'Please choose a patient':
+                        return '<?php echo xla('Please choose a patient');?>';
+                    case 'Must be future date':
+                        return '<?php echo xla('Must be future date');?>';
+                    case 'Recipient required unless status is Done':
+                        return '<?php echo xla('Recipient required unless status is Done');?>';
                     default:
                        return '<?php echo xla('is not valid');?>';
                 }

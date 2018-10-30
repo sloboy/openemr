@@ -34,7 +34,7 @@ while ($lrow = sqlFetchArray($lres)) {
     $my_files[] = "LBF/$option_id.plugin.php";
 }
 
-$form_filename = strip_escape_custom($_REQUEST['form_filename']);
+$form_filename = $_REQUEST['form_filename'];
 // Sanity check to prevent evildoing.
 if (!in_array($form_filename, $my_files)) {
     $form_filename = '';
@@ -46,6 +46,11 @@ $imagedir     = "$OE_SITE_DIR/images";
 $educationdir = "$OE_SITE_DIR/documents/education";
 
 if (!empty($_POST['bn_save'])) {
+    //verify csrf
+    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
+        csrfNotVerified();
+    }
+
     if ($form_filename) {
         // Textareas, at least in Firefox, return a \r\n at the end of each line
         // even though only \n was originally there.  For consistency with
@@ -68,6 +73,11 @@ if (!empty($_POST['bn_save'])) {
         $form_dest_filename = basename($form_dest_filename);
         if ($form_dest_filename == '') {
             die(htmlspecialchars(xl('Cannot find a destination filename')));
+        }
+
+        $path_parts = pathinfo($form_dest_filename);
+        if (!in_array(strtolower($path_parts['extension']), array('gif','jpg','jpe','jpeg','png','svg'))) {
+            die(xl('Only images files are accepted'));
         }
 
         $imagepath = "$imagedir/$form_dest_filename";
@@ -117,6 +127,11 @@ if (!empty($_POST['bn_save'])) {
  */
 
 if (isset($_POST['generate_thumbnails'])) {
+    //verify csrf
+    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
+        csrfNotVerified();
+    }
+
     $thumb_generator = new ThumbnailGenerator();
     $results = $thumb_generator->generate_all();
 
@@ -177,6 +192,11 @@ if ($GLOBALS['secure_upload']) {
     curl_close($curl);
 
     if (isset($_POST['submit_form'])) {
+        //verify csrf
+        if (!verifyCsrfToken($_POST["csrf_token_form"])) {
+            csrfNotVerified();
+        }
+
         $new_white_list = empty($_POST['white_list']) ? array() : $_POST['white_list'];
 
         // truncate white list from list_options table
@@ -221,7 +241,7 @@ if ($GLOBALS['secure_upload']) {
  }
 </style>
 
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-min-3-1-1/index.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery/dist/jquery.min.js"></script>
 
 <script language="JavaScript">
 // This is invoked when a filename selection changes in the drop-list.
@@ -328,6 +348,7 @@ foreach ($imageslist as $sfname) {
 </table>
 
 <p>
+<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
 <input type='submit' name='bn_save' value='<?php echo htmlspecialchars(xl('Save')) ?>' />
 </p>
 
@@ -346,6 +367,7 @@ foreach ($imageslist as $sfname) {
             </td>
             <td  class="thumb_form" style="width:17%;border-right:none">
                 <form method='post' action='manage_site_files.php#generate_thumb'>
+                    <input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
                     <input style="margin-top: 10px" type="submit" name="generate_thumbnails" value="<?php echo xla('Generate') ?>">
                 </form>
             </td>
@@ -397,6 +419,7 @@ foreach ($imageslist as $sfname) {
         <div class="subject-info-save">
             <input type="button" id="submit-whitelist" value="<?php echo xlt('Save'); ?>" />
             <input type="hidden" name="submit_form" value="1" />
+            <input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
         </div>
     </form>
 

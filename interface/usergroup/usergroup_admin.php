@@ -56,8 +56,8 @@ if (isset($_POST["privatemode"]) && $_POST["privatemode"] =="user_admin") {
             $tqvar = trim(formData('username', 'P'));
             $user_data = sqlFetchArray(sqlStatement("select * from users where id= ? ", array($_POST["id"])));
             sqlStatement("update users set username='$tqvar' where id= ? ", array($_POST["id"]));
-            sqlStatement("update groups set user='$tqvar' where user= ?", array($user_data["username"]));
-            //echo "query was: " ."update groups set user='$tqvar' where user='". $user_data["username"]  ."'" ;
+            sqlStatement("update `groups` set user='$tqvar' where user= ?", array($user_data["username"]));
+            //echo "query was: " ."update `groups` set user='$tqvar' where user='". $user_data["username"]  ."'" ;
         }
 
         if ($_POST["taxid"]) {
@@ -143,6 +143,10 @@ if (isset($_POST["privatemode"]) && $_POST["privatemode"] =="user_admin") {
             "' WHERE id = '" . formData('id', 'P') . "'");
         }
 
+        if (!empty($_POST['clear_2fa'])) {
+            sqlStatement("DELETE FROM login_mfa_registrations WHERE user_id = ?", array($_POST['id']));
+        }
+
         if ($_POST["adminPass"] && $_POST["clearPass"]) {
               require_once("$srcdir/authentication/password_change.php");
               $clearAdminPass=$_POST['adminPass'];
@@ -194,6 +198,11 @@ if (isset($_POST["privatemode"]) && $_POST["privatemode"] =="user_admin") {
         if ($_POST["main_menu_role"]) {
               $mainMenuRole = filter_input(INPUT_POST, 'main_menu_role');
               sqlStatement("update `users` set `main_menu_role` = ? where `id` = ? ", array($mainMenuRole, $_POST["id"]));
+        }
+
+        if ($_POST["patient_menu_role"]) {
+            $patientMenuRole = filter_input(INPUT_POST, 'patient_menu_role');
+            sqlStatement("update `users` set `patient_menu_role` = ? where `id` = ? ", array($patientMenuRole, $_POST["id"]));
         }
 
         if ($_POST["erxprid"]) {
@@ -253,6 +262,7 @@ if (isset($_POST["mode"])) {
             "', newcrop_user_role = '"  . trim(formData('erxrole')) .
             "', physician_type = '"  . trim(formData('physician_type')) .
             "', main_menu_role = '"  . trim(formData('main_menu_role')) .
+            "', patient_menu_role = '"  . trim(formData('patient_menu_role')) .
             "', weno_prov_id = '"  . trim(formData('erxprid')) .
             "', authorized = '"    . trim(formData('authorized')) .
             "', info = '"          . trim(formData('info')) .
@@ -290,7 +300,7 @@ if (isset($_POST["mode"])) {
                   //set the facility name from the selected facility_id
                   sqlStatement("UPDATE users, facility SET users.facility = facility.name WHERE facility.id = '" . trim(formData('facility_id')) . "' AND users.username = '" . trim(formData('rumple')) . "'");
 
-                  sqlStatement("insert into groups set name = '" . trim(formData('groupname')) .
+                  sqlStatement("insert into `groups` set name = '" . trim(formData('groupname')) .
                     "', user = '" . trim(formData('rumple')) . "'");
 
                 if (trim(formData('rumple'))) {
@@ -317,7 +327,7 @@ if (isset($_POST["mode"])) {
             }
         }
     } else if ($_POST["mode"] == "new_group") {
-        $res = sqlStatement("select distinct name, user from groups");
+        $res = sqlStatement("select distinct name, user from `groups`");
         for ($iter = 0; $row = sqlFetchArray($res); $iter++) {
             $result[$iter] = $row;
         }
@@ -330,7 +340,7 @@ if (isset($_POST["mode"])) {
         }
 
         if ($doit == 1) {
-            sqlStatement("insert into groups set name = '" . trim(formData('groupname')) .
+            sqlStatement("insert into `groups` set name = '" . trim(formData('groupname')) .
             "', user = '" . trim(formData('rumple')) . "'");
         } else {
             $alertmsg .= "User " . trim(formData('rumple')) .
@@ -354,14 +364,14 @@ if (isset($_GET["mode"])) {
     // reference users to make sure this user is not referenced!
 
     foreach($result as $iter) {
-      sqlStatement("delete from groups where user = '" . $iter{"username"} . "'");
+      sqlStatement("delete from `groups` where user = '" . $iter{"username"} . "'");
     }
     sqlStatement("delete from users where id = '" . $_GET["id"] . "'");
   }
   *******************************************************************/
 
     if ($_GET["mode"] == "delete_group") {
-        $res = sqlStatement("select distinct user from groups where id = ?", array($_GET["id"]));
+        $res = sqlStatement("select distinct user from `groups` where id = ?", array($_GET["id"]));
         for ($iter = 0; $row = sqlFetchArray($res); $iter++) {
             $result[$iter] = $row;
         }
@@ -370,13 +380,13 @@ if (isset($_GET["mode"])) {
             $un = $iter{"user"};
         }
 
-        $res = sqlStatement("select name, user from groups where user = '$un' " .
+        $res = sqlStatement("select name, user from `groups` where user = '$un' " .
         "and id != ?", array($_GET["id"]));
 
         // Remove the user only if they are also in some other group.  I.e. every
         // user must be a member of at least one group.
         if (sqlFetchArray($res) != false) {
-              sqlStatement("delete from groups where id = ?", array($_GET["id"]));
+              sqlStatement("delete from `groups` where id = ?", array($_GET["id"]));
         } else {
               $alertmsg .= "You must add this user to some other group before " .
                 "removing them from this group. ";
@@ -508,7 +518,7 @@ function authorized_clicked() {
             </div>
             <?php
             if (empty($GLOBALS['disable_non_default_groups'])) {
-                $res = sqlStatement("select * from groups order by name");
+                $res = sqlStatement("select * from `groups` order by name");
                 for ($iter = 0; $row = sqlFetchArray($res); $iter++) {
                     $result5[$iter] = $row;
                 }

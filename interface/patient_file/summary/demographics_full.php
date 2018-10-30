@@ -823,7 +823,7 @@ var skipArray = [
 <?php }?>
 
 <?php if ($set_pid) { ?>
- parent.left_nav.setPatient(<?php echo "'" . addslashes($result['fname']) . " " . addslashes($result['lname']) . "'," . addslashes($pid) . ",'" . addslashes($result['pubpid']) . "','', ' " . xls('DOB') . ": " . addslashes(oeFormatShortDate($result['DOB_YMD'])) . " " . xls('Age') . ": " . addslashes(getPatientAgeDisplay($result['DOB_YMD'])) . "'"; ?>);
+ parent.left_nav.setPatient(<?php echo js_escape($result['fname'] . " " . $result['lname']) . "," . js_escape($pid) . "," . js_escape($result['pubpid']) . ",''," . js_escape(" " . xl('DOB') . ": " . oeFormatShortDate($result['DOB_YMD']) . " " . xl('Age') . ": " . getPatientAgeDisplay($result['DOB_YMD'])); ?>);
 <?php } ?>
 
 <?php echo $date_init; ?>
@@ -928,7 +928,9 @@ $use_validate_js=$GLOBALS['new_validate'];
             var fval = $('#form_' + flds[i]).val();
             duplicateFieldsArray['#form_' + flds[i]] = fval;
         }
-        $(".sel2").select2();
+        $(".sel2").select2({
+            <?php require($GLOBALS['srcdir'] . '/js/xl/select2.js.php'); ?>
+        });
     })
 </script>
 

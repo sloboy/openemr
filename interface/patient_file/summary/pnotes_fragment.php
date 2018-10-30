@@ -45,7 +45,7 @@ if (isset($_GET['docUpdateId'])) {
   <div class='tab current' >
     <?php
     //display all of the notes for the day, as well as others that are active from previous dates, up to a certain number, $N
-    $N = 3; ?>
+    $N = $GLOBALS['num_of_messages_displayed']; ?>
 
     <br/>
 
@@ -85,7 +85,11 @@ if (isset($_GET['docUpdateId'])) {
             echo "<tr class='text' style='border-bottom:2px solid #000;' >\n";
             echo "<td valign='top' class='text' ><b>". htmlspecialchars(xl('From'), ENT_NOQUOTES) ."</b></td>\n";
             echo "<td valign='top' class='text' ><b>". htmlspecialchars(xl('To'), ENT_NOQUOTES) ."</b></td>\n";
-            echo "<td valign='top' class='text' ><b>". htmlspecialchars(xl('Date'), ENT_NOQUOTES) ."</b></td>\n";
+            if ($GLOBALS['messages_due_date']) {
+                echo "<td valign='top' class='text' ><b>". xlt('Due date') ."</b></td>\n";
+            } else {
+                echo "<td valign='top' class='text' ><b>". xlt('Date') ."</b></td>\n";
+            }
             echo "<td valign='top' class='text' ><b>". htmlspecialchars(xl('Subject'), ENT_NOQUOTES) ."</b></td>\n";
             echo "<td valign='top' class='text' ><b>". htmlspecialchars(xl('Content'), ENT_NOQUOTES) ."</b></td>\n";
             echo "<td valign='top' class='text' ></td>\n";
@@ -106,7 +110,7 @@ if (isset($_GET['docUpdateId'])) {
                 echo generate_display_field(array('data_type'=>'1','list_id'=>'note_type'), $iter['title']);
                 echo "</b></td>\n";
 
-                echo "  <td valign='top' class='text'>$body</td>\n";
+                echo "  <td valign='top' class='text'>" . text($body) . "</td>\n";
                 echo "<td valign='top' class='text'><button data-id='" . attr($iter['id']) . "' class='complete_btn'>" . xlt('Completed') . "</button></td>\n";
                 echo " </tr>\n";
 
@@ -133,7 +137,7 @@ if (isset($_GET['docUpdateId'])) {
             <br/>
             <span class='text'>
             <?php echo htmlspecialchars(xl('Displaying the following number of most recent notes:'), ENT_NOQUOTES); ?>
-            <b><?php echo $N;?></b><br>
+            <b><?php echo text($N);?></b><br>
             <a href='pnotes_full.php?s=0' onclick='top.restoreSession()'>
             <?php echo htmlspecialchars(xl('Click here to view them all.'), ENT_NOQUOTES); ?></a>
         </span><?php
@@ -147,7 +151,7 @@ if (isset($_GET['docUpdateId'])) {
         <div class='tab'>
             <?php
             //display all of the notes for the day, as well as others that are active from previous dates, up to a certain number, $N
-            $M = 3; ?>
+            $M = $GLOBALS['num_of_messages_displayed']; ?>
             <br/>
             <?php
             $has_sent_note = 0;
@@ -171,7 +175,11 @@ if (isset($_GET['docUpdateId'])) {
                         $notes_sent_count = 0;//number of notes so far displayed
                         echo "<tr class='text' style='border-bottom:2px solid #000;' >\n";
                         echo "<td valign='top' class='text' ><b>". htmlspecialchars(xl('To'), ENT_NOQUOTES) ."</b></td>\n";
-                        echo "<td valign='top' class='text' ><b>". htmlspecialchars(xl('Date'), ENT_NOQUOTES) ."</b></td>\n";
+                        if ($GLOBALS['messages_due_date']) {
+                            echo "<td valign='top' class='text' ><b>". xlt('Due date') ."</b></td>\n";
+                        } else {
+                            echo "<td valign='top' class='text' ><b>". xlt('Date') ."</b></td>\n";
+                        }
                         echo "<td valign='top' class='text' ><b>". htmlspecialchars(xl('Subject'), ENT_NOQUOTES) ."</b></td>\n";
                         echo "<td valign='top' class='text' ><b>". htmlspecialchars(xl('Content'), ENT_NOQUOTES) ."</b></td>\n";
                         echo "</tr>\n";
@@ -195,7 +203,7 @@ if (isset($_GET['docUpdateId'])) {
                             echo "  <td valign='top' class='text'><b>";
                             echo generate_display_field(array('data_type'=>'1','list_id'=>'note_type'), $iter['title']);
                             echo "</b></td>\n";
-                            echo "  <td valign='top' class='text'>$body</td>\n";
+                            echo "  <td valign='top' class='text'>" . text($body) . "</td>\n";
                             echo " </tr>\n";
                             $notes_sent_count++;
                         }
@@ -218,7 +226,7 @@ if (isset($_GET['docUpdateId'])) {
                     <br/>
                     <span class='text'>
         <?php echo htmlspecialchars(xl('Displaying the following number of most recent notes'), ENT_NOQUOTES).":"; ?>
-                        <b><?php echo $M;?></b><br>
+                        <b><?php echo text($M);?></b><br>
         <a href='pnotes_full.php?s=1' onclick='top.restoreSession()'><?php echo htmlspecialchars(xl('Click here to view them all.'), ENT_NOQUOTES); ?></a>
         </span>
                     <?php

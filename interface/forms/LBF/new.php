@@ -391,12 +391,14 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             $(".iframe_medium").on('click', function (e) {
                 e.preventDefault();
                 e.stopPropagation();
+                let url = $(this).attr('href');
+                url = encodeURI(url);
                 dlgopen('', '', 950, 550, '', '', {
                     buttons: [
                         {text: '<?php echo xla('Close'); ?>', close: true, style: 'default btn-sm'}
                     ],
                     type: 'iframe',
-                    url: $(this).attr('href')
+                    url: url
                 });
             });
 
@@ -456,7 +458,8 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                         '?codetype=' + encodeURIComponent(codetype) +
                         '&code=' + encodeURIComponent(code) +
                         '&selector=' + encodeURIComponent(selector) +
-                        '&pricelevel=' + encodeURIComponent(f.form_fs_pricelevel ? f.form_fs_pricelevel.value : ""));
+                        '&pricelevel=' + encodeURIComponent(f.form_fs_pricelevel ? f.form_fs_pricelevel.value : "") +
+                        '&csrf_token_form=' + encodeURIComponent('<?php echo attr(collectCsrfToken()); ?>'));
                 }
                 return '';
             }
@@ -494,6 +497,7 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             current_sel_name = elem ? elem.name : '';
             var url = '<?php echo $rootdir ?>/patient_file/encounter/find_code_dynamic.php';
             if (codetype) url += '?codetype=' + codetype;
+            url = encodeURI(url);
             dlgopen(url, '_blank', 800, 500);
         }
 
@@ -626,7 +630,8 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             $.getScript('<?php echo $GLOBALS['web_root'] ?>/library/ajax/code_attributes_ajax.php' +
                 '?codetype=' + encodeURIComponent(a[0]) +
                 '&code=' + encodeURIComponent(a[1]) +
-                '&pricelevel=' + encodeURIComponent(f.form_fs_pricelevel.value));
+                '&pricelevel=' + encodeURIComponent(f.form_fs_pricelevel.value) +
+                '&csrf_token_form=' + encodeURIComponent('<?php echo attr(collectCsrfToken()); ?>'));
         }
 
         // Respond to clicking a checkbox for adding (or removing) a specific product.
@@ -652,7 +657,8 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                 '?codetype=' + encodeURIComponent(a[0]) +
                 '&code=' + encodeURIComponent(a[1]) +
                 '&selector=' + encodeURIComponent(a[2]) +
-                '&pricelevel=' + encodeURIComponent(f.form_fs_pricelevel.value));
+                '&pricelevel=' + encodeURIComponent(f.form_fs_pricelevel.value) +
+                '&csrf_token_form=' + encodeURIComponent('<?php echo attr(collectCsrfToken()); ?>'));
         }
 
         // Respond to clicking a checkbox for adding (or removing) a specific diagnosis.
@@ -677,7 +683,8 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             $.getScript('<?php echo $GLOBALS['web_root'] ?>/library/ajax/code_attributes_ajax.php' +
                 '?codetype=' + encodeURIComponent(a[0]) +
                 '&code=' + encodeURIComponent(a[1]) +
-                '&pricelevel=' + encodeURIComponent(f.form_fs_pricelevel ? f.form_fs_pricelevel.value : ""));
+                '&pricelevel=' + encodeURIComponent(f.form_fs_pricelevel ? f.form_fs_pricelevel.value : "") +
+                '&csrf_token_form=' + encodeURIComponent('<?php echo attr(collectCsrfToken()); ?>'));
         }
 
         // Respond to selecting a package of codes.
@@ -687,7 +694,8 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             if (sel.value) {
                 $.getScript('<?php echo $GLOBALS['web_root'] ?>/library/ajax/code_attributes_ajax.php' +
                     '?list=' + encodeURIComponent(sel.value) +
-                    '&pricelevel=' + encodeURIComponent(f.form_fs_pricelevel ? f.form_fs_pricelevel.value : ""));
+                    '&pricelevel=' + encodeURIComponent(f.form_fs_pricelevel ? f.form_fs_pricelevel.value : "") +
+                    '&csrf_token_form=' + encodeURIComponent('<?php echo attr(collectCsrfToken()); ?>'));
             }
             sel.selectedIndex = 0;
         }

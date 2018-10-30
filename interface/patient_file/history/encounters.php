@@ -26,12 +26,6 @@ if ($GLOBALS['enable_group_therapy']) {
 
 $is_group = ($attendant_type == 'gid') ? true : false;
 
-if ($is_group && !acl_check("groups", "glog", false, array('view','write'))) {
-    echo xlt("access not allowed");
-    exit();
-}
-
-
 // "issue" parameter exists if we are being invoked by clicking an issue title
 // in the left_nav menu.  Currently that is just for athletic teams.  In this
 // case we only display encounters that are linked to the specified issue.
@@ -52,17 +46,11 @@ $issue = empty($_GET['issue']) ? 0 : 0 + $_GET['issue'];
  $auth_relaxed  = acl_check('encounters', 'relaxed');
  $auth_med      = acl_check('patients', 'med');
  $auth_demo     = acl_check('patients', 'demo');
+ $glog_view_write = acl_check("groups", "glog", false, array('view','write'));
 
  $tmp = getPatientData($pid, "squad");
 if ($tmp['squad'] && ! acl_check('squads', $tmp['squad'])) {
     $auth_notes_a = $auth_notes = $auth_coding_a = $auth_coding = $auth_med = $auth_demo = $auth_relaxed = 0;
-}
-
-if (!($auth_notes_a || $auth_notes || $auth_coding_a || $auth_coding || $auth_med || $auth_relaxed)) {
-    echo "<body>\n<html>\n";
-    echo "<p>(".htmlspecialchars(xl('Encounters not authorized'), ENT_NOQUOTES).")</p>\n";
-    echo "</body>\n</html>\n";
-    exit();
 }
 
 // Perhaps the view choice should be saved as a session variable.
@@ -122,6 +110,12 @@ function showDocument(&$drow)
 
     $docdate = $drow['docdate'];
 
+    // if doc is already tagged by encounter it already has its own row so return
+    $doc_tagged_enc = $drow['encounter_id'];
+    if ($doc_tagged_enc) {
+        return;
+    }
+
     echo "<tr class='text docrow' id='".htmlspecialchars($drow['id'], ENT_QUOTES)."' title='". htmlspecialchars(xl('View document'), ENT_QUOTES) . "'>\n";
 
   // show date
@@ -173,7 +167,7 @@ function generatePageElement($start, $pagesize, $billing, $issue, $text)
 <link rel="stylesheet" href="<?php echo $GLOBALS['webroot'] ?>/library/css/encounters.css" type="text/css">
 <link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
 
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-2-2/index.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/manual-added-packages/jquery-min-1-2-2/index.js"></script>
 <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/ajtooltip.js"></script>
 
 <script language="JavaScript">
@@ -259,6 +253,13 @@ if ($issue) {
 <?php
 // Setup the GET string to append when switching between billing and clinical views.
 
+
+if (!($auth_notes_a || $auth_notes || $auth_coding_a || $auth_coding || $auth_med || $auth_relaxed) || ($is_group && !$glog_view_write)) {
+    echo "<body>\n<html>\n";
+    echo "<p>(".htmlspecialchars(xl('Encounters not authorized'), ENT_NOQUOTES).")</p>\n";
+    echo "</body>\n</html>\n";
+    exit();
+}
 
 $pagestart=0;
 if (isset($_GET['pagesize'])) {
@@ -354,7 +355,7 @@ if (!$billing_view) {
   // Query the documents for this patient.  If this list is issue-specific
   // then also limit the query to documents that are linked to the issue.
     $queryarr = array($pid);
-    $query = "SELECT d.id, d.type, d.url, d.docdate, d.list_id, c.name " .
+    $query = "SELECT d.id, d.type, d.url, d.docdate, d.list_id, d.encounter_id, c.name " .
     "FROM documents AS d, categories_to_documents AS cd, categories AS c WHERE " .
     "d.foreign_id = ? AND cd.document_id = d.id AND c.id = cd.category_id ";
     if ($issue) {
@@ -443,7 +444,10 @@ while ($result4 = sqlFetchArray($res4)) {
     }
 
         // if ($auth_notes_a || ($auth_notes && $result4['user'] == $_SESSION['authUser']))
+    if (!empty($result4{"reason"})) {
         $reason_string .= htmlspecialchars($result4{"reason"}, ENT_NOQUOTES) . "<br>\n";
+    }
+
         // else
         //   $reason_string = "(No access)";
 

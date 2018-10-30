@@ -59,7 +59,7 @@ if ($is_lbf) {
   }
 </style>
 
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-7-2/index.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-1-7-2/jquery.min.js"></script>
 <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/modified/dygraphs-2-0-0/dygraph.js?v=<?php echo $v_js_includes; ?>"></script>
 
 <script type="text/javascript">
@@ -87,6 +87,8 @@ function show_graph(table_graph, name_graph, title_graph)
                 delimiter: '\t',
                 xRangePad: 20,
                 yRangePad: 20,
+                width: 480,
+                height: 320,
                 xlabel: xlabel_translate
             }
         );
@@ -96,7 +98,14 @@ function show_graph(table_graph, name_graph, title_graph)
         },
         error: function() {
             // hide the chart div
-            $('#chart').hide();
+          $('#chart').hide();
+          if(!title_graph){
+              alert("<?php echo xlt('This item does not have enough data to graph');?>" + ".\n" +"<?php echo xlt('Please select an item that has more data');?>" + ".");
+          }
+          else {
+              alert(title_graph + " " + "<?php echo xlt('does not have enough data to graph');?>" + ".\n" + "<?php echo xlt('Please select an item that has more data');?>" + ".");
+          }
+          
         }
     });
 }

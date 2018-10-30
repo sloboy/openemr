@@ -97,7 +97,7 @@ function doOneDay($catid, $udate, $starttime, $duration, $prefcatid)
 
  $catslots = 1;
 if ($input_catid) {
-    $srow = sqlQuery("SELECT pc_duration FROM openemr_postcalendar_categories WHERE pc_catid = '$input_catid'");
+    $srow = sqlQuery("SELECT pc_duration FROM openemr_postcalendar_categories WHERE pc_catid = ?", array($input_catid));
     if ($srow['pc_duration']) {
         $catslots = ceil($srow['pc_duration'] / $slotsecs);
     }
@@ -158,10 +158,10 @@ if ($_REQUEST['providerid']) {
     $query = "SELECT pc_eventDate, pc_endDate, pc_startTime, pc_duration, " .
     "pc_recurrtype, pc_recurrspec, pc_alldayevent, pc_catid, pc_prefcatid, pc_title " .
     "FROM openemr_postcalendar_events " .
-    "WHERE pc_aid = '$providerid' AND " .
-    "((pc_endDate >= '$sdate' AND pc_eventDate < '$edate') OR " .
-    "(pc_endDate = '0000-00-00' AND pc_eventDate >= '$sdate' AND pc_eventDate < '$edate'))";
-    $res = sqlStatement($query);
+    "WHERE pc_aid = ? AND " .
+    "((pc_endDate >= ? AND pc_eventDate < ?) OR " .
+    "(pc_endDate = '0000-00-00' AND pc_eventDate >= ? AND pc_eventDate < ?))";
+    $res = sqlStatement($query, array($providerid, $sdate, $edate, $sdate, $edate));
 //  print_r($res);
 
     while ($row = sqlFetchArray($res)) {
@@ -313,10 +313,10 @@ if ($_REQUEST['providerid']) {
 <?php html_header_show(); ?>
 <title><?php xl('Find Available Appointments', 'e'); ?></title>
 <link rel="stylesheet" href='<?php echo $css_header ?>' type='text/css'>
-<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.min.css">
+<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.min.css">
 
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-7-2/index.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.full.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-1-7-2/jquery.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.full.min.js"></script>
 
 <script language="JavaScript">
 
@@ -391,7 +391,7 @@ form {
 <body class="body_top">
 
 <div id="searchCriteria">
-<form method='post' name='theform' action='find_appt_popup.php?providerid=<?php echo $providerid ?>&catid=<?php echo $input_catid ?>'>
+<form method='post' name='theform' action='find_appt_popup.php?providerid=<?php echo attr($providerid); ?>&catid=<?php echo attr($input_catid); ?>'>
    <input type="hidden" name='bypatient' />
 
     <?php xl('Start date:', 'e'); ?>

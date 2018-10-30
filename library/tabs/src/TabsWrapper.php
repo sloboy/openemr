@@ -54,7 +54,9 @@ class TabsWrapper
         // Note: require.js may be another option, but trying to keep it simple for now.
         if (!defined('INCLUDED_JQUERY_UI_CSS')) {
             define('INCLUDED_JQUERY_UI_CSS', '1-12-1');
-            $s .= "<link rel='stylesheet' href='$web_root/public/assets/jquery-ui-" . INCLUDED_JQUERY_UI_CSS . "/themes/base/jquery-ui.css'>\n";
+            // jquery 1-12-1 is now the default jquery-ui-themes package
+            //$s .= "<link rel='stylesheet' href='$web_root/public/assets/jquery-ui-" . INCLUDED_JQUERY_UI_CSS . "/themes/base/jquery-ui.css'>\n";
+            $s .= "<link rel='stylesheet' href='$web_root/public/assets/jquery-ui-themes/themes/base/jquery-ui.min.css'>\n";
         }
         $s .= <<<EOD
 <style>
@@ -99,7 +101,8 @@ EOD;
         $s = '';
         if (!defined('INCLUDED_JQUERY_UI')) {
             define('INCLUDED_JQUERY_UI', '1-12-1');
-            $s .= "<script src='$web_root/public/assets/jquery-ui-" . INCLUDED_JQUERY_UI . "/jquery-ui.min.js'></script>\n";
+            // jquery 1-12-1 is now the default jquery-ui package
+            $s .= "<script src='$web_root/public/assets/jquery-ui/jquery-ui.min.js'></script>\n";
         }
         if (!defined('INCLUDED_TW_ONETIME_JS')) {
             define('INCLUDED_TW_ONETIME_JS', true);
@@ -124,6 +127,7 @@ function twSetup(tabsid) {
   tabs.on("click", "span.ui-icon-close", function() {
     var mytabsid = $(this).closest("div").attr("id");
     var panelId = $(this).prev().attr("href").substring(1);
+    top.restoreSession();
     twCloseTab(mytabsid, panelId);
   });
 }
@@ -140,6 +144,7 @@ function twAddTab(tabsid, label, content) {
   var panelId = tabsid + '-' + (++twObject[tabsid].counter);
   var li = "<li><a href='#" + panelId + "'>" + label + "</a> <span class='ui-icon ui-icon-close' role='presentation'>Remove Tab</span></li>";
   twObject[tabsid].tabs.find(".ui-tabs-nav").append(li);
+  top.restoreSession();
   twObject[tabsid].tabs.append("<div id='" + panelId + "'>" + content + "</div>");
   twObject[tabsid].tabs.tabs("refresh");
   twObject[tabsid].tabs.tabs("option", "active", oldcount);
@@ -149,6 +154,7 @@ function twAddTab(tabsid, label, content) {
 // Add a new tab using an iframe loading a specified URL.
 function twAddFrameTab(tabsid, label, url) {
   var panelId = twNextTabId(tabsid);
+  top.restoreSession();
   twAddTab(
     tabsid,
     label,
@@ -161,6 +167,7 @@ function twAddFrameTab(tabsid, label, url) {
 function twCloseTab(tabsid, panelId) {
   twObject[tabsid].tabs.find("[href='#" + panelId + "']").closest("li").remove();
   twObject[tabsid].tabs.find("#" + panelId).remove();
+  top.restoreSession();
   twObject[tabsid].tabs.tabs("refresh");
 }
 

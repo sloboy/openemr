@@ -31,6 +31,7 @@ if ($GLOBALS['gbl_portal_cms_enable']) {
 require_once("$srcdir/appointments.inc.php");
 
 use ESign\Api;
+use Mpdf\Mpdf;
 use OpenEMR\Services\FacilityService;
 
 $facilityService = new FacilityService();
@@ -41,33 +42,28 @@ $GLOBALS['PATIENT_REPORT_ACTIVE'] = true;
 $PDF_OUTPUT = empty($_POST['pdf']) ? 0 : intval($_POST['pdf']);
 
 if ($PDF_OUTPUT) {
-/*   composer bootstrap loads classes for mPDF */
-    $pdf = new mPDF(
-        $GLOBALS['pdf_language'], // codepage or language/codepage or language - this can help auto determine many other options such as RTL
-        $GLOBALS['pdf_size'], // Globals default is 'letter'
-        '9', // default font size (pt)
-        '', // default_font. will set explicitly in script.
-        $GLOBALS['pdf_left_margin'],
-        $GLOBALS['pdf_right_margin'],
-        $GLOBALS['pdf_top_margin'],
-        $GLOBALS['pdf_bottom_margin'],
-        '', // default header margin
-        '', // default footer margin
-        $GLOBALS['pdf_layout']
-    ); // Globals default is 'P'
-
-      $pdf->shrink_tables_to_fit = 1;
-      $keep_table_proportions = true;
-      $pdf->use_kwt = true;
-
- // set 'dejavusans' for now. which is supported by a lot of languages - http://dejavu-fonts.org/wiki/Main_Page
- // TODO: can have this selected as setting in globals after we have more experience with this to fully support internationalization. Don't think this is issue here.
-       $pdf->setDefaultFont('dejavusans'); // see config_fonts.php/config_lang2fonts.php for OTL font declarations for different languages/fonts. Important for auto font select getting right font for lanaguage.
-       $pdf->autoScriptToLang = true; // will sense font based on language used in html i.e if hebrew text is sent the proper font will be selected. IMPORTANT: this affects performance.
+    $config_mpdf = array(
+        'tempDir' => $GLOBALS['MPDF_WRITE_DIR'],
+        'mode' => $GLOBALS['pdf_language'],
+        'format' => $GLOBALS['pdf_size'],
+        'default_font_size' => '9',
+        'default_font' => 'dejavusans',
+        'margin_left' => $GLOBALS['pdf_left_margin'],
+        'margin_right' => $GLOBALS['pdf_right_margin'],
+        'margin_top' => $GLOBALS['pdf_top_margin'],
+        'margin_bottom' => $GLOBALS['pdf_bottom_margin'],
+        'margin_header' => '',
+        'margin_footer' => '',
+        'orientation' => $GLOBALS['pdf_layout'],
+        'shrink_tables_to_fit' => 1,
+        'use_kwt' => true,
+        'autoScriptToLang' => true,
+        'keep_table_proportions' => true
+    );
+    $pdf = new mPDF($config_mpdf);
     if ($_SESSION['language_direction'] == 'rtl') {
-        $pdf->SetDirectionality('rtl'); // direction from html will still be honored.
+        $pdf->SetDirectionality('rtl');
     }
-
     ob_start();
 } // end pdf conditional.
 
@@ -168,7 +164,7 @@ function postToGet($arin)
 
 <?php if (!$PDF_OUTPUT) { ?>
 
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-3-1-1/index.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery/dist/jquery.min.js"></script>
 <script type="text/javascript" src="<?php echo $GLOBALS['web_root']?>/library/js/SearchHighlight.js"></script>
 <script type="text/javascript">var $j = jQuery.noConflict();</script>
 
@@ -347,7 +343,7 @@ foreach ($ar as $key => $val) {
             $recurrences = fetchRecurrences($pid);
 
             //print the recurring days to screen
-            if ($recurrences[0] == false) { //if there are no recurrent appointments:
+            if (empty($recurrences)) { //if there are no recurrent appointments:
                 echo "<div class='text' >";
                 echo "<span>" . xlt('None') . "</span>";
                 echo "</div>";
@@ -355,7 +351,7 @@ foreach ($ar as $key => $val) {
             } else {
                 foreach ($recurrences as $row) {
                     //checks if there are recurrences and if they are current (git didn't end yet)
-                    if ($row == false || !recurrence_is_current($row['pc_endDate'])) {
+                    if (!recurrence_is_current($row['pc_endDate'])) {
                         continue;
                     }
 
@@ -607,8 +603,8 @@ foreach ($ar as $key => $val) {
                     '/documents/' . $from_pathname . '/' . $from_filename;
                     $to_file = substr($from_file, 0, strrpos($from_file, '.')) . '_converted.jpg';
                 }
-
-                if ($extension != ".pdf") {
+                // adding support for .txt MDM-TXA interface/orders/receive_hl7_results.inc.php
+                if ($extension != (".pdf" || ".txt")) {
                     $image_data = getimagesize($from_file);
                     $extension = image_type_to_extension($image_data[2]);
                 }
@@ -655,6 +651,10 @@ foreach ($ar as $key => $val) {
                         ob_start();
 
                         echo "<div><div class='text documents'>\n";
+                    } elseif ($extension == ".txt") {
+                        echo "<pre>";
+                        readfile($from_file);
+                        echo "</pre>";
                     } else {
                         if (! is_file($to_file)) {
                             exec("convert -density 200 \"$from_file\" -append -resize 850 \"$to_file\"");

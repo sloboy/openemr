@@ -168,14 +168,31 @@ if (($_REQUEST['pid']) && ($_REQUEST['action'] == "new_recall")) {
      *  And when that day comes we'll put it here...
      *  The other option is to use Visit Categories here.  Maybe both?  Consensus?
      */
-    $query = "SELECT PLAN FROM form_eye_mag WHERE PID=? AND date < NOW() ORDER BY date DESC LIMIT 1";
+    $query = "SELECT ORDER_DETAILS FROM form_eye_mag_orders WHERE PID=? AND ORDER_DATE_PLACED < NOW() ORDER BY ORDER_DATE_PLACED DESC LIMIT 1";
     $result2 = sqlQuery($query, array($_REQUEST['pid']));
-    if ($result2) {
-        $result['PLAN'] = $result2['PLAN'];
+    if (!empty($result2)) {
+        $result['PLAN'] = $result2['ORDER_DETAILS'];
     }
-    $query = "SELECT pc_eventDate FROM openemr_postcalendar_events WHERE pc_pid =? ORDER BY pc_eventDate DESC LIMIT 1";
+
+    $query = "SELECT * FROM openemr_postcalendar_events WHERE pc_pid =? ORDER BY pc_eventDate DESC LIMIT 1";
     $result2 = sqlQuery($query, array($_REQUEST['pid']));
-    $result['DOLV'] = $result2['pc_eventDate'];
+    if ($result2) { //if they were never actually scheduled this would be blank
+        $result['DOLV']     = oeFormatShortDate($result2['pc_eventDate']);
+        $result['provider'] = $result2['pc_aid'];
+        $result['facility'] = $result2['pc_facility'];
+    }
+    /**
+     * Is there an existing Recall in place already????
+     * If so we need to use that info...
+     */
+    $query = "SELECT * from medex_recalls where r_pid=?";
+    $result3 = sqlQuery($query, array($_REQUEST['pid']));
+    if ($result3) {
+        $result['recall_date']  = $result3['r_eventDate'];
+        $result['PLAN']         = $result3['r_reason'];
+        $result['facility']     = $result3['r_facility'];
+        $result['provider']     = $result3['r_provider'];
+    }
     echo json_encode($result);
     exit;
 }
@@ -213,11 +230,11 @@ if ($_REQUEST['action'] == "process") {
     $pidList = json_decode($_POST['parameter'], true);
     $_SESSION['pidList'] = $pidList;
     if ($_POST['item'] == "SMS") {
-        $sql = "UPDATE hipaa_reminders SET r_phone_done=NOW(),r_phone_bywhom=? WHERE r_pid IN (" . $_SESSION['pidList'] . ")";
+        $sql = "UPDATE hipaa_reminders SET r_phone_done=NOW(),r_phone_bywhom=? WHERE r_pid IN (" . add_escape_custom($_SESSION['pidList']) . ")";
         sqlQuery($sql, array($_SESSION['authUser']));
     }
     if ($_POST['item'] == "AVM") {
-        $sql = "UPDATE hipaa_reminders SET r_vm_sent=NOW(),r_vm_sent_by=? WHERE r_pid IN (" . $_SESSION['pidList'] . ")";
+        $sql = "UPDATE hipaa_reminders SET r_vm_sent=NOW(),r_vm_sent_by=? WHERE r_pid IN (" . add_escape_custom($_SESSION['pidList']) . ")";
         sqlQuery($sql, array($_SESSION['authUser']));
     }
     if ($_POST['item'] == "postcards") {

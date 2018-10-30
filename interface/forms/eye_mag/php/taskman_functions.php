@@ -25,6 +25,7 @@
  * @link http://www.open-emr.org
  */
 
+use Mpdf\Mpdf;
 use OpenEMR\Services\FacilityService;
 
 $facilityService = new FacilityService();
@@ -63,13 +64,13 @@ function make_task($ajax_req)
 
     if ($task['ID'] && $task['COMPLETED'] =='2') {
         $send['comments'] = xlt('This fax has already been sent.')." ".
-                            xlt('If you made changes and want to re-send it, delete the original (in Communications) and try again.')." ".
-                            xlt('Filename').": ".$filename;
+                            xlt('If you made changes and want to re-send it, delete the original (in Communications) or wait 60 seconds, and try again.')." ".
+                            xlt('Filename').": ". text($filename);
         echo json_encode($send);
         exit;
     } else if ($task['ID'] && $task['COMPLETED'] =='1') {
         if ($task['DOC_TYPE'] == 'Fax') {
-            $send['DOC_link'] = "<a href='".$webroot."/openemr/controller.php?document&view&patient_id=".$task['PATIENT_ID']."&doc_id=".$task['DOC_ID']."'
+            $send['DOC_link'] = "<a href='".$webroot."/openemr/controller.php?document&view&patient_id=".attr($task['PATIENT_ID'])."&doc_id=".attr($task['DOC_ID'])."'
 								target='_blank' title='".xla('View the Summary Report sent to Fax Server.')."'>
 								<i class='fa fa-file-pdf-o fa-fw'></i></a>
 								<i class='fa fa-repeat fa-fw'
@@ -83,7 +84,7 @@ function make_task($ajax_req)
         } else if ($task['DOC_TYPE'] == "Fax-resend") {
             //we need to resend this fax????
             //You can only resend from here once.
-            $send['comments'] = xlt('To resend, delete the file from Communications and try again.');
+            $send['comments'] = xlt('To resend, delete the file from Communications, reload this page and try again.');
             echo json_encode($send);
             update_taskman($task, 'refaxed', '2');
             exit;
@@ -93,8 +94,8 @@ function make_task($ajax_req)
     } else if (!$task['ID']) {
         $sql = "INSERT into form_taskman
 				(REQ_DATE, FROM_ID,  TO_ID,  PATIENT_ID,  DOC_TYPE,  DOC_ID,  ENC_ID) VALUES
-				(NOW(), '$from_id', '$to_id','$patient_id','$doc_type','$doc_id','$enc')";
-        sqlQuery($sql);
+				(NOW(), ?, ?, ?, ?, ?, ?)";
+        sqlQuery($sql, array($from_id, $to_id, $patient_id, $doc_type, $doc_id, $enc));
     } else {
         $send['comments'] = xlt('Currently working on making this document')."...\n";
     }
@@ -120,7 +121,7 @@ function process_tasks($task)
 
     if ($task['DOC_TYPE'] == "Fax") {
         //now return any objects you need to Eye Form
-        $send['DOC_link'] = "<a href='".$webroot."/openemr/controller.php?document&view&patient_id=".$task['PATIENT_ID']."&doc_id=".$task['DOC_ID']."'
+        $send['DOC_link'] = "<a href='".$webroot."/openemr/controller.php?document&view&patient_id=".attr($task['PATIENT_ID'])."&doc_id=".attr($task['DOC_ID'])."'
 								target='_blank' title=".xlt('Report was faxed. Click to view.').">
 								<i class='fa fa-file-pdf-o fa-fw'></i>
 							</a>";
@@ -262,14 +263,31 @@ function make_document($task)
 
     $pt_name    = $patientData['fname'].' '.$patientData['lname'];
     $encounter = $task['ENC_ID'];
-    $query="select form_encounter.date as encounter_date,form_eye_mag.id as form_id,form_encounter.*, form_eye_mag.*
-            from form_eye_mag ,forms,form_encounter
-            where
-            form_encounter.encounter =? and
-            form_encounter.encounter = forms.encounter and
-            form_eye_mag.id=forms.form_id and
-            forms.deleted != '1' and
-            form_eye_mag.pid=? ";
+    $query = "select  *,form_encounter.date as encounter_date
+              
+               from forms,form_encounter,form_eye_base, 
+                form_eye_hpi,form_eye_ros,form_eye_vitals,
+                form_eye_acuity,form_eye_refraction,form_eye_biometrics,
+                form_eye_external, form_eye_antseg,form_eye_postseg,
+                form_eye_neuro,form_eye_locking
+                    where
+                    forms.deleted != '1'  and
+                    forms.formdir='eye_mag' and
+                    forms.encounter=form_encounter.encounter  and
+                    forms.form_id=form_eye_base.id and
+                    forms.form_id=form_eye_hpi.id and
+                    forms.form_id=form_eye_ros.id and
+                    forms.form_id=form_eye_vitals.id and
+                    forms.form_id=form_eye_acuity.id and
+                    forms.form_id=form_eye_refraction.id and
+                    forms.form_id=form_eye_biometrics.id and
+                    forms.form_id=form_eye_external.id and
+                    forms.form_id=form_eye_antseg.id and
+                    forms.form_id=form_eye_postseg.id and
+                    forms.form_id=form_eye_neuro.id and
+                    forms.form_id=form_eye_locking.id and
+                    forms.form_id =? and
+                    forms.pid=?";
     $encounter_data =sqlQuery($query, array($encounter,$task['PATIENT_ID']));
     @extract($encounter_data);
     $providerID  =  getProviderIdOfEncounter($encounter);
@@ -277,7 +295,6 @@ function make_document($task)
     $dated = new DateTime($encounter_date);
     $dated = $dated->format('Y/m/d');
     $visit_date = oeFormatShortDate($dated);
-    //$visit_date = $encounter_date;
     $pid = $task['PATIENT_ID'];
     $PDF_OUTPUT='1';
 
@@ -302,6 +319,12 @@ function make_document($task)
         }
     } else {
         $category_name = "Encounters - Eye";
+        //$category_name = "Encounters";
+        // $category_name = "Encounters - Eye"; //<---- openEMR base requires this.  My Category names don't use the "- Eye" part...
+        // Should the end user change the Document Category Names, this as is will fail.
+        // Is this an issue also for foreign language users?
+        //  -- perhaps not as I suspect translations occur after DB work just before display to end user.
+        // Maybe we should search category_names for the first match to 'Encounters%' and use that id?
         $query = "select id from categories where name =?";
         $ID = sqlQuery($query, array($category_name));
         $category_id = $ID['id'];
@@ -317,35 +340,28 @@ function make_document($task)
         sqlQuery($sql, array("%".$filename));
     }
 
-    /*$pdf = new HTML2PDF(
-        $GLOBALS['pdf_layout'],
-        $GLOBALS['pdf_size'],
-        $GLOBALS['pdf_language'],
-        true, // default unicode setting is true
-        'UTF-8', // default encoding setting is UTF-8
-        array($GLOBALS['pdf_left_margin'],$GLOBALS['pdf_top_margin'],$GLOBALS['pdf_right_margin'],$GLOBALS['pdf_bottom_margin']),
-        $_SESSION['language_direction'] == 'rtl' ? true : false
-    );*/
-
-    $pdf = new mPDF(
-        $GLOBALS['pdf_language'],
-        $GLOBALS['pdf_size'],
-        '9',
-        '',
-        $GLOBALS['pdf_left_margin'],
-        $GLOBALS['pdf_right_margin'],
-        $GLOBALS['pdf_top_margin'],
-        $GLOBALS['pdf_bottom_margin'],
-        '', // default header margin
-        '', // default footer margin
-        $GLOBALS['pdf_layout']
+    $config_mpdf = array(
+        'tempDir' => $GLOBALS['MPDF_WRITE_DIR'],
+        'mode' => $GLOBALS['pdf_language'],
+        'format' => $GLOBALS['pdf_size'],
+        'default_font_size' => '9',
+        'default_font' => '',
+        'margin_left' => $GLOBALS['pdf_left_margin'],
+        'margin_right' => $GLOBALS['pdf_right_margin'],
+        'margin_top' => $GLOBALS['pdf_top_margin'],
+        'margin_bottom' => $GLOBALS['pdf_bottom_margin'],
+        'margin_header' => '',
+        'margin_footer' => '',
+        'orientation' => $GLOBALS['pdf_layout'],
+        'shrink_tables_to_fit' => 1,
+        'use_kwt' => true,
+        'keep_table_proportions' => true
     );
+
+    $pdf = new mPDF($config_mpdf);
     if ($_SESSION['language_direction'] == 'rtl') {
         $pdf->SetDirectionality('rtl');
     }
-    $pdf->shrink_tables_to_fit = 1;
-    $keep_table_proportions = true;
-    $pdf->use_kwt = true;
 
     ob_start();
     ?><html>
@@ -449,7 +465,7 @@ function make_document($task)
                         <td class='col1'>
                             <?php echo xlt('Comments'); ?>:
                         </td>
-                        <td class='col2'><?php echo xlt('Report of visit'); ?>: <?php echo text($pt_name); ?> on <?php echo $visit_date; ?>
+                        <td class='col2'><?php echo xlt('Report of visit'); ?>: <?php echo text($pt_name); ?> on <?php echo text($visit_date); ?>
                         </td>
                     </tr>
             </table>

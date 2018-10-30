@@ -2,46 +2,21 @@
 /**
  * Menu loader.
  *
- * @package OpenEMR
- * @link    http://www.open-emr.org
- * @author  Kevin Yeh <kevin.y@integralemr.com>
- * @author  Robert Down <robertdown@live.com>
- * @author  Brady Miller <brady.g.miller@gmail.com>
+ * @package   OpenEMR
+ * @link      http://www.open-emr.org
+ * @author    Kevin Yeh <kevin.y@integralemr.com>
+ * @author    Robert Down <robertdown@live.com>
+ * @author    Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2016 Kevin Yeh <kevin.y@integralemr.com>
  * @copyright Copyright (c) 2017 Brady Miller <brady.g.miller@gmail.com>
- * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-require_once("menu_updates.php");
-require_once("menu_db.php");
 use OpenEMR\Menu\MainMenuRole;
 
-$menu_parsed=load_menu("default");
-if (count($menu_parsed)==0) {
-    // Use a json file to build menu rather than database
-    // Note this is currently the standard mechanism
-
-    // Collect the selected menu of user
-    $mainMenuRole = MainMenuRole::getMainMenuRole();
-
-    // Load the selected menu
-    if (preg_match("/.json$/", $mainMenuRole)) {
-        // load custom menu (includes .json in id)
-        $menu_parsed = json_decode(file_get_contents($GLOBALS['OE_SITE_DIR'] . "/documents/custom_menus/" . $mainMenuRole));
-    } else {
-        // load a standardized menu (does not include .json in id)
-        $menu_parsed = json_decode(file_get_contents(dirname(__FILE__) . "/menus/" . $mainMenuRole . ".json"));
-    }
-
-    // if error, then die and report error
-    if (!$menu_parsed) {
-        die("\nJSON ERROR: " . json_last_error());
-    }
-}
-
-menu_update_entries($menu_parsed);
-$menu_restrictions=array();
-menu_apply_restrictions($menu_parsed, $menu_restrictions);
+// Collect the menu then build it
+$menuMain = new MainMenuRole();
+$menu_restrictions = $menuMain->getMenu();
 ?>
 <script type="text/javascript">
 

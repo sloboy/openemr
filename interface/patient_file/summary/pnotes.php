@@ -47,7 +47,7 @@ if ($docid) {
 <head>
 <?php html_header_show();?>
 
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-2-2/index.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/manual-added-packages/jquery-min-1-2-2/index.js"></script>
 <link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
 
 </head>
@@ -194,19 +194,8 @@ if ($result != null) {
 $(document).ready(function(){
     $(".noterow").mouseover(function() { $(this).toggleClass("highlight"); });
     $(".noterow").mouseout(function() { $(this).toggleClass("highlight"); });
-    $(".noterow").click(function() { EditNote(this); });
 });
-
-var EditNote = function(note) {
-<?php if (acl_check('patients', 'notes', '', array('write','addonly'))) : ?>
-    top.restoreSession();
-    location.href = "pnotes_full.php?<?php echo $urlparms; ?>&noteid=" + note.id + "&active=1";
-<?php else : ?>
-    // no-op
-    alert("<?php echo htmlspecialchars(xl('You do not have access to view/edit this note'), ENT_QUOTES); ?>");
-<?php endif; ?>
-}
-
+    
 </script>
 
 </html>

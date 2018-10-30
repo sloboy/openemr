@@ -4,8 +4,8 @@
 // THIS MODULE REPLACES cptcm_codes.php, hcpcs_codes.php AND icd9cm_codes.php.
 ////////////////////////////////////////////////////////////////////////////////
 
-include_once("../../globals.php");
-include_once("../../../custom/code_types.inc.php");
+require_once("../../globals.php");
+require_once("../../../custom/code_types.inc.php");
 
 //the maximum number of records to pull out with the search:
 $M = 30;
@@ -22,7 +22,7 @@ $code_type = $_GET['type'];
 <link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
 
 <!-- add jQuery support -->
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-2-2/index.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/manual-added-packages/jquery-min-1-2-2/index.js"></script>
 
 </head>
 <body class="body_bottom">
@@ -33,54 +33,64 @@ $code_type = $_GET['type'];
 
 <td valign=top>
 
-<form name="search_form" id="search_form" method="post" action="search_code.php?type=<?php echo $code_type ?>">
+<form name="search_form" id="search_form" method="post" action="search_code.php?type=<?php echo attr(urlencode($code_type)); ?>">
+<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+
 <input type="hidden" name="mode" value="search">
 
-<span class="title"><?php echo $code_type ?> <?php xl('Codes', 'e'); ?></span><br>
+<span class="title"><?php echo text($code_type); ?> <?php echo xlt('Codes'); ?></span><br>
 
 <input type="textbox" id="text" name="text" size=15>
 
-<input type='submit' id="submitbtn" name="submitbtn" value='<?php xl('Search', 'e'); ?>'>
+<input type='submit' id="submitbtn" name="submitbtn" value='<?php echo xla('Search'); ?>'>
 <div id="searchspinner" style="display: inline; visibility:hidden;"><img src="<?php echo $GLOBALS['webroot'] ?>/interface/pic/ajax-loader.gif"></div>
 
 </form>
 
 <?php
 if (isset($_POST["mode"]) && $_POST["mode"] == "search" && $_POST["text"] == "") {
+    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
+        csrfNotVerified();
+    }
+
     echo "<div id='resultsummary' style='background-color:lightgreen;'>";
     echo "Enter search criteria above</div>";
 }
 
 if (isset($_POST["mode"]) && $_POST["mode"] == "search" && $_POST["text"] != "") {
+    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
+        csrfNotVerified();
+    }
+
   // $sql = "SELECT * FROM codes WHERE (code_text LIKE '%" . $_POST["text"] .
   //   "%' OR code LIKE '%" . $_POST["text"] . "%') AND code_type = '" .
   //   $code_types[$code_type]['id'] . "' ORDER BY code LIMIT " . ($M + 1);
 
   // The above is obsolete now, fees come from the prices table:
     $sql = "SELECT codes.*, prices.pr_price FROM codes " .
-    "LEFT OUTER JOIN patient_data ON patient_data.pid = '$pid' " .
+    "LEFT OUTER JOIN patient_data ON patient_data.pid = ? " .
     "LEFT OUTER JOIN prices ON prices.pr_id = codes.id AND " .
     "prices.pr_selector = '' AND " .
     "prices.pr_level = patient_data.pricelevel " .
-    "WHERE (code_text LIKE '%" . $_POST["text"] . "%' OR " .
-    "code LIKE '%" . $_POST["text"] . "%') AND " .
-    "code_type = '" . $code_types[$code_type]['id'] . "' " .
+    "WHERE (code_text LIKE ? OR " .
+    "code LIKE ?) AND " .
+    "code_type = ? " .
     "ORDER BY code ".
-    " LIMIT " . ($M + 1).
+    " LIMIT " . escape_limit(($M + 1)) .
     "";
 
-    if ($res = sqlStatement($sql)) {
+    if ($res = sqlStatement($sql, array($pid, "%".$_POST["text"]."%", "%".$_POST["text"]."%", $code_types[$code_type]['id']))) {
         for ($iter=0; $row=sqlFetchArray($res); $iter++) {
             $result[$iter] = $row;
         }
 
         echo "<div id='resultsummary' style='background-color:lightgreen;'>";
         if (count($result) > $M) {
-            echo "Showing the first ".$M." results";
+            echo "Showing the first " . text($M) . " results";
         } else if (count($result) == 0) {
             echo "No results found";
         } else {
-            echo "Showing all ".count($result)." results";
+            echo "Showing all " . text(count($result)) . " results";
         }
 
         echo "</div>";
@@ -99,17 +109,18 @@ if ($result) {
         }
 
         echo "<div class='oneresult' style='padding: 3px 0px 3px 0px;'>";
-        echo "<a target='".xl('Diagnosis')."' href='diagnosis.php?mode=add" .
-            "&type="     . urlencode($code_type) .
-            "&code="     . urlencode($iter{"code"}) .
-            "&modifier=" . urlencode($iter{"modifier"}) .
-            "&units="    . urlencode($iter{"units"}) .
-            // "&fee="      . urlencode($iter{"fee"}) .
-            "&fee="      . urlencode($iter['pr_price']) .
-            "&text="     . urlencode($iter{"code_text"}) .
+        echo "<a target='" . xla('Diagnosis') . "' href='diagnosis.php?mode=add" .
+            "&type="     . attr(urlencode($code_type)) .
+            "&code="     . attr(urlencode($iter{"code"})) .
+            "&modifier=" . attr(urlencode($iter{"modifier"})) .
+            "&units="    . attr(urlencode($iter{"units"})) .
+            // "&fee="      . attr(urlencode($iter{"fee"})) .
+            "&fee="      . attr(urlencode($iter['pr_price'])) .
+            "&text="     . attr(urlencode($iter{"code_text"})) .
+            "&csrf_token_form=" . attr(urlencode(collectCsrfToken())) .
             "' onclick='top.restoreSession()'>";
-        echo ucwords("<b>" . strtoupper($iter{"code"}) . "&nbsp;" . $iter['modifier'] .
-            "</b>" . " " . strtolower($iter{"code_text"}));
+        echo ucwords("<b>" . text(strtoupper($iter{"code"})) . "&nbsp;" . text($iter['modifier']) .
+            "</b>" . " " . text(strtolower($iter{"code_text"})));
         echo "</a><br>\n";
         echo "</div>";
 
@@ -117,7 +128,7 @@ if ($result) {
         $total++;
 
         if ($total == $M) {
-            echo "</span><span class='alert-custom'>".xl('Some codes were not displayed.')."</span>\n";
+            echo "</span><span class='alert-custom'>" . xlt('Some codes were not displayed.') . "</span>\n";
             break;
         }
     }

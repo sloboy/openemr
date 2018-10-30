@@ -131,7 +131,7 @@ if (isset($mode)) {
     } elseif ($mode == "new") {
         $note = $_POST['note'];
         if ($noteid) {
-            updatePnote($noteid, $note, $_POST['form_note_type'], $_POST['assigned_to']);
+            updatePnote($noteid, $note, $_POST['form_note_type'], $_POST['assigned_to'], '', !empty($_POST['form_datetime']) ? DateTimeToYYYYMMDDHHMMSS($_POST['form_datetime']) : '');
         } else {
             $noteid = addPnote(
                 $patient_id,
@@ -139,7 +139,8 @@ if (isset($mode)) {
                 $userauthorized,
                 '1',
                 $_POST['form_note_type'],
-                $_POST['assigned_to']
+                $_POST['assigned_to'],
+                !empty($_POST['form_datetime']) ? DateTimeToYYYYMMDDHHMMSS($_POST['form_datetime']) : ''
             );
         }
 
@@ -289,7 +290,7 @@ $urlparms = "docid=$docid_esc&orderid=$orderid_esc";
     <div>
         <span class="title"><?php echo xlt('Patient Messages') . $title_docname; ?></span>
     </div>
-    <div id='namecontainer_pnotes' class='namecontainer_pnotes' style='float:left;margin-right:10px'>
+    <div id='namecontainer_pnotes' class='namecontainer_pnotes'>
         <?php echo htmlspecialchars(xl('for'), ENT_NOQUOTES);?>&nbsp;<span class="title">
       <a href="../summary/demographics.php" onclick="return top.restoreSession()"><?php echo htmlspecialchars(getPatientName($patient_id), ENT_NOQUOTES); ?></a></span>
     </div>
@@ -715,8 +716,8 @@ if ($result_sent_count == $M) {
 if ($_GET['set_pid']) {
     $ndata = getPatientData($patient_id, "fname, lname, pubpid");
 ?>
- parent.left_nav.setPatient(<?php echo "'" . addslashes($ndata['fname']." ".$ndata['lname']) . "'," .
-    addslashes($patient_id) . ",'" . addslashes($ndata['pubpid']) . "',window.name"; ?>);
+ parent.left_nav.setPatient(<?php echo js_escape($ndata['fname']." ".$ndata['lname']) . "," .
+     js_escape($patient_id) . "," . js_escape($ndata['pubpid']) . ",window.name"; ?>);
 <?php
 }
 

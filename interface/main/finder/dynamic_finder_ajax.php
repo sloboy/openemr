@@ -1,16 +1,26 @@
 <?php
-// Copyright (C) 2012 Rod Roark <rod@sunsetsystems.com>
-// Sponsored by David Eschelbacher, MD
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// as published by the Free Software Foundation; either version 2
-// of the License, or (at your option) any later version.
+/**
+ * dynamic_finder_ajax.php
+ *
+ * Sponsored by David Eschelbacher, MD
+ *
+ * @package   OpenEMR
+ * @link      http://www.open-emr.org
+ * @author    Rod Roark <rod@sunsetsystems.com>
+ * @author    Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2012 Rod Roark <rod@sunsetsystems.com>
+ * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ */
 
 require_once("../../globals.php");
 require_once($GLOBALS['srcdir']."/options.inc.php");
 require_once($GLOBALS['fileroot']."/library/acl.inc");
 session_start();
+
+if (!verifyCsrfToken($_GET["csrf_token_form"])) {
+    csrfNotVerified();
+}
 
 $popup = empty($_REQUEST['popup']) ? 0 : 1;
 
@@ -28,6 +38,9 @@ $limit = '';
 if ($iDisplayStart >= 0 && $iDisplayLength >= 0) {
     $limit = "LIMIT " . escape_limit($iDisplayStart) . ", " . escape_limit($iDisplayLength);
 }
+// Search parameter.  -1 means .
+//
+$searchMethodInPatientList = isset($_GET['searchType' ]) && $_GET['searchType' ]==="true" ?  true : false;
 
 // Column sorting parameters.
 //
@@ -37,13 +50,13 @@ if (isset($_GET['iSortCol_0'])) {
         $iSortCol = intval($_GET["iSortCol_$i"]);
         if ($_GET["bSortable_$iSortCol"] == "true") {
             $sSortDir = escape_sort_order($_GET["sSortDir_$i"]); // ASC or DESC
-      // We are to sort on column # $iSortCol in direction $sSortDir.
+            // We are to sort on column # $iSortCol in direction $sSortDir.
             $orderby .= $orderby ? ', ' : 'ORDER BY ';
-      //
+            //
             if ($aColumns[$iSortCol] == 'name') {
-                    $orderby .= "lname $sSortDir, fname $sSortDir, mname $sSortDir";
+                $orderby .= "lname $sSortDir, fname $sSortDir, mname $sSortDir";
             } else {
-                    $orderby .= "`" . escape_sql_column_name($aColumns[$iSortCol], array('patient_data')) . "` $sSortDir";
+                $orderby .= "`" . escape_sql_column_name($aColumns[$iSortCol], array('patient_data')) . "` $sSortDir";
             }
         }
     }
@@ -57,11 +70,20 @@ if (isset($_GET['sSearch']) && $_GET['sSearch'] !== "") {
     foreach ($aColumns as $colname) {
         $where .= $where ? "OR " : "WHERE ( ";
         if ($colname == 'name') {
-            $where .=
-            "lname LIKE '$sSearch%' OR " .
-            "fname LIKE '$sSearch%' OR " .
-            "mname LIKE '$sSearch%' ";
-        } else {
+            if ($searchMethodInPatientList) { // exact search
+                $where .=
+                    "lname LIKE '$sSearch' OR " .
+                    "fname LIKE '$sSearch' OR " .
+                    "mname LIKE '$sSearch' ";
+            } else {
+                $where .= // like search
+                    "lname LIKE '$sSearch%' OR " .
+                    "fname LIKE '$sSearch%' OR " .
+                    "mname LIKE '$sSearch%' ";
+            }
+        } elseif ($searchMethodInPatientList) {
+            $where .= "`" . escape_sql_column_name($colname, array('patient_data')) . "` LIKE '$sSearch' ";
+        } else { // exact search
             $where .= "`" . escape_sql_column_name($colname, array('patient_data')) . "` LIKE '$sSearch%' ";
         }
     }
@@ -82,12 +104,21 @@ for ($i = 0; $i < count($aColumns); ++$i) {
         $where .= $where ? ' AND' : 'WHERE';
         $sSearch = add_escape_custom($_GET["sSearch_$i"]);
         if ($colname == 'name') {
-            $where .= " ( " .
-            "lname LIKE '$sSearch%' OR " .
-            "fname LIKE '$sSearch%' OR " .
-            "mname LIKE '$sSearch%' )";
+            if ($searchMethodInPatientList) { // like search
+                $where .= " ( " .
+                    "lname LIKE '$sSearch%' OR " .
+                    "fname LIKE '$sSearch%' OR " .
+                    "mname LIKE '$sSearch%' )";
+            } else {  // exact search
+                $where .= " ( " .
+                    "lname LIKE '$sSearch' OR " .
+                    "fname LIKE '$sSearch' OR " .
+                    "mname LIKE '$sSearch' )";
+            }
+        } elseif ($searchMethodInPatientList) {
+            $where .= " `" . escape_sql_column_name($colname, array('patient_data')) . "` LIKE '$sSearch%'"; // like search
         } else {
-            $where .= " `" . escape_sql_column_name($colname, array('patient_data')) . "` LIKE '$sSearch%'";
+            $where .= " `" . escape_sql_column_name($colname, array('patient_data')) . "` LIKE '$sSearch'"; // exact search
         }
     }
 }
@@ -131,10 +162,10 @@ $iFilteredTotal = $row['count'];
 // Build the output data array.
 //
 $out = array(
-  "sEcho"                => intval($_GET['sEcho']),
-  "iTotalRecords"        => $iTotal,
-  "iTotalDisplayRecords" => $iFilteredTotal,
-  "aaData"               => array()
+    "sEcho"                => intval($_GET['sEcho']),
+    "iTotalRecords"        => $iTotal,
+    "iTotalDisplayRecords" => $iFilteredTotal,
+    "aaData"               => array()
 );
 
 // save into variable data about fields of 'patient_data' from 'layout_options'
@@ -148,7 +179,7 @@ while ($row = sqlFetchArray($res)) {
 $query = "SELECT $sellist FROM patient_data $where $orderby $limit";
 $res = sqlStatement($query);
 while ($row = sqlFetchArray($res)) {
-  // Each <tr> will have an ID identifying the patient.
+    // Each <tr> will have an ID identifying the patient.
     $arow = array('DT_RowId' => 'pid_' . $row['pid']);
     foreach ($aColumns as $colname) {
         if ($colname == 'name') {

@@ -2,24 +2,15 @@
 /**
  * Functions to globally validate and prepare data for sql database insertion.
  *
- * Copyright (C) 2009 Rod Roark <rod@sunsetsystems.com>
- *
- * LICENSE: This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
- *
- * @package OpenEMR
- * @author  Rod Roark <rod@sunsetsystems.com>
- * @author  Brady Miller <brady.g.miller@gmail.com>
- * @link    http://www.open-emr.org
+ * @package   OpenEMR
+ * @link      http://www.open-emr.org
+ * @author    Rod Roark <rod@sunsetsystems.com>
+ * @author    Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2009 Rod Roark <rod@sunsetsystems.com>
+ * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
+
 
 /**
  * Escape a parameter to prepare for a sql query.
@@ -248,6 +239,7 @@ function formData($name, $type = 'P', $isTrim = false)
 
 /**
  * (Note this function is deprecated for new scripts and is only utilized to support legacy scripts)
+ * NEED TO KEEP THIS FUNCTION TO ENSURE LEGACY FORMS ARE SUPPORTED
  * Core function that will be called by formData.
  * Note it can also be called directly if preparing
  * normal variables (not GET,POST, or REQUEST)
@@ -263,40 +255,7 @@ function formDataCore($s, $isTrim = false)
         $s = trim($s);
     }
 
-      //strip escapes
-      $s = strip_escape_custom($s);
       //add escapes for safe database insertion
       $s = add_escape_custom($s);
       return $s;
-}
-
-/**
- * (Note this function is deprecated for new scripts and is only utilized to support legacy scripts)
- * Will remove escapes if needed (ie magic quotes turned on) from string
- * Called by above formDataCore() function to prepare for database insertion.
- * Can also be called directly if simply need to remove escaped characters
- * from a string before processing.
- *
- * @param string $s
- * @return string
- */
-function strip_escape_custom($s)
-{
-      //magic quotes is gone as of php 5.4, so just return the value
-      return $s;
-}
-
-/**
- * (Note this function is deprecated for new scripts and is only utilized to support legacy scripts)
- * This function is only being kept to support
- * previous functionality. If you want to trim
- * variables, this should be done using above
- * functions.
- *
- * @param string $s
- * @return string
- */
-function formTrim($s)
-{
-    return formDataCore($s, true);
 }

@@ -105,22 +105,6 @@ function checkBackgroundServices()
     $phimail_interval = max(0, (int) $GLOBALS['phimail_interval']);
     updateBackgroundService('phimail', $phimail_active, $phimail_interval);
 }
-function handleAltServices($this_serviceid, $gln = '', $sinterval = 1)
-{
-    $bgservices = sqlStatement("SELECT gl_name, gl_index, gl_value FROM globals WHERE gl_name = ?", array($gln));
-    while ($globalsrow = sqlFetchArray($bgservices)) {
-        $GLOBALS[$globalsrow['gl_name']] = $globalsrow['gl_value'];
-    }
-
-    $bs_active = empty($GLOBALS[$gln]) ? '0' : '1';
-    $bs_interval = max(0, (int) $sinterval);
-    updateBackgroundService($this_serviceid, $bs_active, $bs_interval);
-    if (!$bs_active && $this_serviceid == 'ccdaservice') {
-        require_once(dirname(__FILE__)."/../../ccdaservice/ssmanager.php");
-
-        @service_shutdown(0);
-    }
-}
 ?>
 
 <html>
@@ -131,6 +115,11 @@ function handleAltServices($this_serviceid, $gln = '', $sinterval = 1)
 // If we are saving user_specific globals.
 //
 if (array_key_exists('form_save', $_POST) && $_POST['form_save'] && $userMode) {
+    //verify csrf
+    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
+        csrfNotVerified();
+    }
+
     $i = 0;
     foreach ($GLOBALS_METADATA as $grpname => $grparr) {
         if (in_array($grpname, $USER_SPECIFIC_TABS)) {
@@ -165,6 +154,11 @@ if (array_key_exists('form_save', $_POST) && $_POST['form_save'] && $userMode) {
 }
 
 if (array_key_exists('form_download', $_POST) && $_POST['form_download']) {
+    //verify csrf
+    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
+        csrfNotVerified();
+    }
+
     $client = portal_connection();
     try {
         $response = $client->getPortalConnectionFiles($credentials);
@@ -209,6 +203,11 @@ if (array_key_exists('form_download', $_POST) && $_POST['form_download']) {
 // If we are saving main globals.
 //
 if (array_key_exists('form_save', $_POST) && $_POST['form_save'] && !$userMode) {
+    //verify csrf
+    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
+        csrfNotVerified();
+    }
+
     $force_off_enable_auditlog_encryption = true;
   // Need to force enable_auditlog_encryption off if the php openssl module
   // is not installed or the AES-256-CBC cipher is not available.
@@ -301,7 +300,6 @@ if (array_key_exists('form_save', $_POST) && $_POST['form_save'] && !$userMode) 
 
     checkCreateCDB();
     checkBackgroundServices();
-    handleAltServices('ccdaservice', 'ccda_alt_service_enable', 1);
 
   // July 1, 2014: Ensoftek: For Auditable events and tamper-resistance (MU2)
   // If Audit Logging status has changed, log it.
@@ -340,6 +338,7 @@ if (array_key_exists('form_save', $_POST) && $_POST['form_save'] && !$userMode) 
       type: "POST",
       url: "<?php echo $GLOBALS['webroot']?>/library/ajax/offsite_portal_ajax.php",
       data: {
+        csrf_token_form: '<?php echo attr(collectCsrfToken()); ?>',
         action: 'check_file'
       },
       cache: false,
@@ -372,6 +371,7 @@ if (array_key_exists('form_save', $_POST) && $_POST['form_save'] && !$userMode) 
 <?php } else { ?>
   <form method='post' name='theform' id='theform' class='form-horizontal' action='edit_globals.php' onsubmit='return top.restoreSession()'>
 <?php } ?>
+<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
 
 <div class="container">
     <div class="row">
@@ -625,7 +625,7 @@ foreach ($GLOBALS_METADATA as $grpname => $grparr) {
                     if ($userMode) {
                         $globalTitle = $globalValue;
                     }
-                    $themedir = "$webserver_root/interface/themes";
+                    $themedir = "$webserver_root/public/themes";
                     $dh = opendir($themedir);
                     if ($dh) {
                         // Collect styles

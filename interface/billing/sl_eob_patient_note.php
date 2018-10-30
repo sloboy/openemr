@@ -21,26 +21,32 @@
  * @link    http://www.open-emr.org
  */
 
-  include_once("../globals.php");
-  include_once("../../library/patient.inc");
-  include_once("../../library/forms.inc");
 
-  $info_msg = "";
+require_once("../globals.php");
+require_once("../../library/patient.inc");
+require_once("../../library/forms.inc");
+
+use OpenEMR\Core\Header;
+
+$info_msg = "";
 ?>
 <html>
 <head>
-<?php html_header_show();?>
-<link rel=stylesheet href="<?php echo $css_header;?>" type="text/css">
-<title><?php xl('EOB Posting - Patient Note', 'e')?></title>
+<?php Header::setupHeader();?>
+<title><?php echo xlt('EOB Posting - Patient Note'); ?></title>
 </head>
 <body>
 <?php
   $patient_id = $_GET['patient_id'];
 if (! $patient_id) {
-    die(xl("You cannot access this page directly."));
+    die(xlt("You cannot access this page directly."));
 }
 
 if ($_POST['form_save']) {
+    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
+        csrfNotVerified();
+    }
+
     $thevalue = trim($_POST['form_note']);
 
     sqlStatement("UPDATE patient_data SET " .
@@ -49,36 +55,45 @@ if ($_POST['form_save']) {
 
     echo "<script language='JavaScript'>\n";
     if ($info_msg) {
-        echo " alert('$info_msg');\n";
+        echo " alert('" . addslashes($info_msg) . "');\n";
     }
-
     echo " window.close();\n";
     echo "</script></body></html>\n";
     exit();
 }
 
   $row = sqlQuery("select fname, lname, billing_note " .
-    "from patient_data where pid = '$patient_id' limit 1");
+    "from patient_data where pid = ? limit 1", array($patient_id));
 ?>
-<center>
+<div class="container">
+    <div class = "row">
+        <div class="page-header">
+                <h2><?php echo xlt('Billing Note for '). text($row['fname']) . " " . text($row['lname']); ?></h2>
+            </div>
+    </div>
+    <div class = "row">
+        <form method='post' action='sl_eob_patient_note.php?patient_id=<?php echo attr($patient_id); ?>'>
+            <input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+            <div class="col-xs-12" style="padding-bottom:5px">
 
-<h2><?php echo xl('Billing Note for '). $row['fname'] . " " . $row['lname'] ?></h2>
-<p>&nbsp;</p>
-
-<form method='post' action='sl_eob_patient_note.php?patient_id=<?php  echo $patient_id ?>'>
-
-<p>
-<input type='text' name='form_note' size='60' maxlength='255'
- value='<?php  echo addslashes($row['billing_note']) ?>' />
-</p>
-
-<p>&nbsp;</p>
-<input type='submit' name='form_save' value='<?php xl("Save", "e")?>'>
-&nbsp;
-<input type='button' value='<?php xl("Cancel", "e")?>' onclick='window.close()'>
-
-</form>
-</center>
+            </div>
+            <div class="col-xs-12" style="padding-bottom:5px">
+                <div class="col-xs-12">
+                    <input type='text' name='form_note' class='form-control' value='<?php echo attr($row['billing_note']) ?>' placeholder ='<?php echo xla('Max 255 characters')?>' />
+                </div>
+            </div>
+            <?php //can change position of buttons by creating a class 'position-override' and adding rule text-alig:center or right as the case may be in individual stylesheets ?>
+            <div class="form-group clearfix">
+                <div class="col-sm-12 text-left position-override" id="search-btn">
+                    <div class="btn-group" role="group">
+                        <button type='submit' class="btn btn-default btn-save" name='form_save' id="btn-save" ><?php echo xlt("Save"); ?></button>
+                        <button type='submit' class="btn btn-link btn-cancel btn-separate-left" name='form_cancel' id="btn-cancel"  onclick='window.close();'><?php echo xlt("Cancel"); ?></button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div><!--end of container div-->
 
 </body>
 </html>

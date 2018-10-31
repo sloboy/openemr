@@ -46,8 +46,8 @@ services:
       MYSQL_PASS: openemr
       OE_USER: admin
       OE_PASS: pass
-      FLEX_REPOSITORY: https://github.com/openemr/openemr.git
-      FLEX_REPOSITORY_BRANCH: master
+      FLEX_REPOSITORY: https://github.com/sloboy/openemr.git
+      FLEX_REPOSITORY_BRANCH: prod-dynamic-finder
       EASY_DEV_MODE: "yes"
     depends_on:
     - mysql

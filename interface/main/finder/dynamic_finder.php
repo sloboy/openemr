@@ -39,8 +39,18 @@ while ($row = sqlFetchArray($res)) {
     $header .= "   <th>";
     $header .= text($title);
     $header .= "</th>\n";
-    $header0 .= "   <td ><input type='text' size='20' ";
-    $header0 .= "value='' class='search_init' placeholder='".xla("Search by"). " " . $title1 ."'/></td>\n";
+    //dh 10/30/2018 check for acl to list only logged in users patients
+    //only change if the column is provider and the acl is set.  Also disable
+    //the input box and turn it grey
+    //echo((!acl_check('patients', 'p_list') && $colname=='providerID'));
+    if (!acl_check('patients', 'p_list') && $colname=='providerID') {
+        $header0 .= "   <td align='center'><input type='text' size='10' disabled ";
+        $header0 .= "value='' class='search_init' STYLE=' background-color: #CCCCCC'/></td>\n";
+    }
+        else{
+        $header0 .= "   <td align='center'><input type='text' size='10' ";
+        $header0 .= "value='' class='search_init' /></td>\n";
+    }
     if ($coljson) {
         $coljson .= ", ";
     }
@@ -174,7 +184,7 @@ while ($row = sqlFetchArray($res)) {
                     <!-- Class "display" is defined in demo_table.css -->
                     <table border="0" cellpadding="0" cellspacing="0" class="display" id="pt_table">
                         <thead>
-                            <tr id="advanced_search" class="hideaway"  style="display: none;">
+                            <tr id="advanced_search" class="hideaway"  style role="row">
                                 <?php echo $header0; ?>
                             </tr>
                             <tr class="head">
@@ -209,6 +219,7 @@ while ($row = sqlFetchArray($res)) {
         });
     });
     </script>
+    <!--
     <script>
     $('#show_hide').click(function () {
         var elementTitle = $('#show_hide').prop('title');
@@ -223,6 +234,6 @@ while ($row = sqlFetchArray($res)) {
         }
         $('#show_hide').prop('title', elementTitle);
     });
-    </script>
+    </script> -->
 </body>
 </html>

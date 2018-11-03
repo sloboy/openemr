@@ -15,6 +15,7 @@
 
 require_once("../../globals.php");
 require_once($GLOBALS['srcdir']."/options.inc.php");
+//dh 8/27/2018 check for acl to list only logged in users patients
 
 if (!verifyCsrfToken($_GET["csrf_token_form"])) {
     csrfNotVerified();
@@ -117,6 +118,15 @@ for ($i = 0; $i < count($aColumns); ++$i) {
         }
     }
 }
+if (!acl_check('patients', 'p_list')) {
+    if ($where =="") {
+        $where = " where ";
+        $where  .= "`providerID` = " . $_SESSION['authUserID'];
+    } else {
+        $where  .= " AND (`providerID` = " . $_SESSION['authUserID'];
+        $where .= ")";
+    }
+}
 
 // Compute list of column names for SELECT clause.
 // Always includes pid because we need it for row identification.
@@ -145,14 +155,7 @@ $iTotal = $row['count'];
 $row = sqlQuery("SELECT COUNT(id) AS count FROM patient_data $where");
 $iFilteredTotal = $row['count'];
 
-// Build the output data array.
-//
-$out = array(
-    "sEcho"                => intval($_GET['sEcho']),
-    "iTotalRecords"        => $iTotal,
-    "iTotalDisplayRecords" => $iFilteredTotal,
-    "aaData"               => array()
-);
+
 
 // save into variable data about fields of 'patient_data' from 'layout_options'
 $fieldsInfo = array();
@@ -162,7 +165,18 @@ while ($row = sqlFetchArray($res)) {
     $fieldsInfo[$row['field_id']] = $row;
 }
 
+
 $query = "SELECT $sellist FROM patient_data $where $orderby $limit";
+// Build the output data array.
+//
+$out = array(
+    "sEcho"                => intval($_GET['sEcho']),
+    "iTotalRecords"        => $iTotal,
+    "iTotalDisplayRecords" => $iFilteredTotal,
+    "aaData"               => array(),
+    "SQLStatement"         => $query
+);
+
 $res = sqlStatement($query);
 while ($row = sqlFetchArray($res)) {
     // Each <tr> will have an ID identifying the patient.

@@ -1059,29 +1059,44 @@ function postcalendar_user_search()
     $provinfo = getProviderInfo();
     $tpl->assign('providers', $provinfo);
     // build a list of provider-options for the select box on the input form -- JRM
-    $provider_options = "<option value='_ALL_' ";
-    if ($ProviderID == "_ALL_") {
-        $provider_options .= " SELECTED ";
-    }
-
-    $provider_options .= ">" . xlt('All Providers') . "</option>";
-    foreach ($provinfo as $provider) {
-        $selected = "";
-        // if we don't have a ProviderID chosen, pick the first one from the
-        // pc_username Session variable
-        if ($ProviderID == "") {
-            // that variable stores the 'username' and not the numeric 'id'
-            if ($_SESSION['pc_username'][0] == $provider['username']) {
+    
+    if (!acl_check('patients', 'p_list')) {
+          foreach ($provinfo as $provider) {
+            $selected = "";
+            // if we don't have a ProviderID chosen, pick the first one from the
+            // pc_username Session variable
+            if ($_SESSION['authUserID'] == $provider['id']) {
+                $selected = " SELECTED ";
+                $provider_options .= "<option value=\"" . attr($provider['id']) . "\" ".$selected.">";
+                $provider_options .= text($provider['lname']).", ".text($provider['fname'])."</option>";
+            }
+        }
+    
+    } else {
+        $provider_options = "<option value='_ALL_' ";
+        if ($ProviderID == "_ALL_") {
+            $provider_options .= " SELECTED ";
+        }
+    
+        $provider_options .= ">" . xlt('All Providers') . "</option>";
+        foreach ($provinfo as $provider) {
+            $selected = "";
+            // if we don't have a ProviderID chosen, pick the first one from the
+            // pc_username Session variable
+            if ($ProviderID == "") {
+                // that variable stores the 'username' and not the numeric 'id'
+                if ($_SESSION['pc_username'][0] == $provider['username']) {
+                    $selected = " SELECTED ";
+                }
+            } else if ($ProviderID == $provider['id']) {
                 $selected = " SELECTED ";
             }
-        } else if ($ProviderID == $provider['id']) {
-            $selected = " SELECTED ";
+    
+            $provider_options .= "<option value=\"" . attr($provider['id']) . "\" ".$selected.">";
+            $provider_options .= text($provider['lname']).", ".text($provider['fname'])."</option>";
         }
-
-        $provider_options .= "<option value=\"" . attr($provider['id']) . "\" ".$selected.">";
-        $provider_options .= text($provider['lname']).", ".text($provider['fname'])."</option>";
-    }
-
+    }     
+    
     $tpl->assign_by_ref('PROVIDER_OPTIONS', $provider_options);
 
     // build a list of facility options for the select box on the input form -- JRM

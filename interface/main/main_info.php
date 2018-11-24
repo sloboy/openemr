@@ -72,7 +72,13 @@ if (isset($_SESSION['pc_username'])) {
 
 // different frame source page depending on session vars
 if ($_SESSION['userauthorized'] && $GLOBALS['docs_see_entire_calendar']) {
-    $framesrc = "calendar/index.php?module=PostCalendar&viewtype=" . attr(urlencode($viewtype)) . "&func=view";
+    //dh 11/4/2018 adding acl check for seeing all calendars
+    
+    if (acl_check('patients', 'p_list')) {
+        $framesrc = "calendar/index.php?module=PostCalendar&viewtype=" . attr(urlencode($viewtype)) . "&func=view";    
+    } else {
+        $framesrc = "calendar/index.php?module=PostCalendar&viewtype=" . attr(urlencode($viewtype)) . "&func=view&" . $pcuStr;
+    }    
 } else if ($_SESSION['userauthorized']) {
     $framesrc = "calendar/index.php?module=PostCalendar&viewtype=" . attr(urlencode($viewtype)) . "&func=view&" . $pcuStr;
 } else {

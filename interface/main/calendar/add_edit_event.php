@@ -48,6 +48,7 @@ require_once($GLOBALS['srcdir'].'/acl.inc');
 require_once($GLOBALS['srcdir'].'/patient_tracker.inc.php');
 require_once($GLOBALS['incdir']."/main/holidays/Holidays_Controller.php");
 require_once($GLOBALS['srcdir'].'/group.inc');
+require_once($GLOBALS['srcdir'].'/dh_functions.php');
 
  //Check access control
 if (!acl_check('patients', 'appt', '', array('write','wsome'))) {
@@ -980,13 +981,23 @@ if (empty($collectthis)) {
     }
 
  // If we have a patient ID, get the name and phone numbers to display.
-    if ($patientid) {
-        $prow = sqlQuery("SELECT lname, fname, phone_home, phone_biz, DOB " .
-         "FROM patient_data WHERE pid = ?", array($patientid));
+ //dh-4/8/2018 added patient_type to SQL and set the $default_cat_id to the one in patient_data table
+ if ($patientid) {
+    $arow = sqlQuery("show columns from patient_data like 'patient_type';");
+    if ($arow) {
+        $prow = sqlQuery("SELECT lname, fname, phone_home, phone_biz, DOB, patient_type " .
+            "FROM patient_data WHERE pid = ?", array($patientid));
+        $arow = sqlQuery("Select pc_catid from openemr_postcalendar_categories where " .
+            "pc_catname = ?", array($prow['patient_type']));
         $patientname = $prow['lname'] . ", " . $prow['fname'];
-        if ($prow['phone_home']) {
-            $patienttitle['phone_home'] = xl("Home Phone").": " . $prow['phone_home'];
-        }
+        $default_catid = $arow['pc_catid'];
+    } else {
+        echo('field DOES NOT exists');
+        $prow = sqlQuery("SELECT lname, fname, phone_home, phone_biz, DOB " .
+            "FROM patient_data WHERE pid = ?", array($patientid));
+        $patientname = $prow['lname'] . ", " . $prow['fname'];
+    }
+    //dh
 
         if ($prow['phone_biz']) {
             $patienttitle['phone_biz'] = xl("Work Phone").": " . $prow['phone_biz'];
@@ -1586,6 +1597,7 @@ if ($_GET['prov']==true) {
     }
     ?>
 <?php
+
 if ($_GET['group']==true &&  $have_group_global_enabled) {
     ?>
  <tr id="group_details">
@@ -1726,10 +1738,14 @@ if ($GLOBALS['select_multi_providers']) {
             $defaultProvider = $userid;
         }
     }
+    //dh 11/9/2018 adding acl check here to prevent clinician changing the provider
 
     echo "<select class='input-sm' name='form_provider' style='width:100%' />";
     while ($urow = sqlFetchArray($ures)) {
         echo "    <option value='" . attr($urow['id']) . "'";
+        if (!acl_check('patients', 'p_list')){
+            echo " disabled";
+        }
         if ($urow['id'] == $defaultProvider) {
             echo " selected";
         }
@@ -1857,8 +1873,10 @@ foreach (array(0 => xl('day') , 4 => xl('workday'), 1 => xl('week'), 2 => xl('mo
   <td nowrap>
 
 <?php
+
+
 if ($_GET['group']!=true) {
-    generate_form_field(array('data_type' => 1, 'field_id' => 'apptstatus', 'list_id' => 'apptstat', 'empty_title' => 'SKIP'), $row['pc_apptstatus']);
+    dh_generate_form_field(array('data_type' => 1, 'field_id' => 'apptstatus', 'list_id' => 'apptstat', 'empty_title' => 'SKIP'), $row['pc_apptstatus']);
 } else {
     generate_form_field(array('data_type' => 1, 'field_id' => 'apptstatus', 'list_id' => 'groupstat', 'empty_title' => 'SKIP'), $row['pc_apptstatus']);
 }

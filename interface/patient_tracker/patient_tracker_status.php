@@ -20,6 +20,7 @@ require_once("$srcdir/options.inc.php");
 require_once("$srcdir/forms.inc");
 require_once("$srcdir/encounter_events.inc.php");
 require_once("$srcdir/patient_tracker.inc.php");
+require_once($GLOBALS['srcdir'].'/dh_functions.php');
 
 use OpenEMR\Core\Header;
 
@@ -104,7 +105,11 @@ $row = sqlQuery("select fname, lname " .
             <input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
             <div class="form-group">
                 <label for="statustype"><?php echo xlt('Status Type'); ?></label>
-                <?php echo generate_select_list('statustype', 'apptstat', $trow['laststatus'], xl('Status Type')); ?>
+                <?php 
+                //dh 11/11/2018 using custom generate_select_list with acl check
+                echo dh_generate_select_list('statustype', 'apptstat', $trow['laststatus'], xl('Status Type')); 
+                
+                ?>
             </div>
             <div class="form-group">
                 <label for="roomnum"><?php  echo xlt('Exam Room Number'); ?></label>

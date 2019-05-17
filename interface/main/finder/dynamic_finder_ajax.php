@@ -15,7 +15,7 @@
 
 require_once("../../globals.php");
 require_once($GLOBALS['srcdir']."/options.inc.php");
-
+//dh 8/27/2018 check for acl to list only logged in users patients
 if (!verifyCsrfToken($_GET["csrf_token_form"])) {
     csrfNotVerified();
 }
@@ -117,7 +117,15 @@ for ($i = 0; $i < count($aColumns); ++$i) {
         }
     }
 }
-
+if (!acl_check('patients', 'p_list')) {
+    if ($where =="") {
+        $where = " where ";
+        $where  .= "`providerID` = " . $_SESSION['authUserID'];
+    } else {
+        $where  .= " AND (`providerID` = " . $_SESSION['authUserID'];
+        $where .= ")";
+    }
+}
 // Compute list of column names for SELECT clause.
 // Always includes pid because we need it for row identification.
 //

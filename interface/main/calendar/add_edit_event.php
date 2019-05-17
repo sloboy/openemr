@@ -1025,8 +1025,20 @@ if (empty($collectthis)) {
     }
 
  // Get the providers list.
+ // dh 5/17/2019  use the acl check to list all providers or just the
+ // provider that is logged in
+ if (!acl_check('patients', 'p_list')) {
+    
+    $ures = sqlStatement("SELECT id, username, fname, lname FROM users WHERE " . 
+    "authorized != 0 AND active = 1 AND id = {$userid} ORDER BY lname, fname");  
+} 
+else {
     $ures = sqlStatement("SELECT id, username, fname, lname FROM users WHERE " .
     "authorized != 0 AND active = 1 ORDER BY lname, fname");
+}
+
+
+
 
  // Get event categories.
     $cres = sqlStatement("SELECT pc_catid, pc_catname, pc_recurrtype, pc_duration, pc_end_all_day " .

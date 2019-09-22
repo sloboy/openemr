@@ -975,18 +975,34 @@ if (empty($collectthis)) {
     }
 
  // If we have a patient ID, get the name and phone numbers to display.
+ //dh-4/8/2018 added patient_type to SQL and set the $default_cat_id to the one in patient_data table
     if ($patientid) {
-        $prow = sqlQuery("SELECT lname, fname, phone_home, phone_biz, DOB " .
-         "FROM patient_data WHERE pid = ?", array($patientid));
-        $patientname = $prow['lname'] . ", " . $prow['fname'];
-        if ($prow['phone_home']) {
-            $patienttitle['phone_home'] = xl("Home Phone").": " . $prow['phone_home'];
+        $arow = sqlQuery("show columns from patient_data like 'patient_type';");
+        if ($arow) {
+            $prow = sqlQuery("SELECT lname, fname, phone_home, phone_biz, DOB, patient_type " .
+                "FROM patient_data WHERE pid = ?", array($patientid));
+            $arow = sqlQuery("Select pc_catid from openemr_postcalendar_categories where " .
+                "pc_constant_id = ?", array($prow['patient_type']));
+            $patientname = $prow['lname'] . ", " . $prow['fname'];
+            $default_catid = $arow['pc_catid'];
+            if ($prow['phone_home']) {
+                $patienttitle['phone_home'] = xl("Home Phone").": " . $prow['phone_home'];
+            }
+            if ($prow['phone_biz']) {
+                $patienttitle['phone_biz'] = xl("Work Phone").": " . $prow['phone_biz'];
+            }
+        }else {
+            echo('field DOES NOT exists');
+            
+            $prow = sqlQuery("SELECT lname, fname, phone_home, phone_biz, DOB " .
+            "FROM patient_data WHERE pid = ?", array($patientid));
+            $patientname = $prow['lname'] . ", " . $prow['fname'];
+            if ($prow['phone_home']) {
+                $patienttitle['phone_home'] = xl("Home Phone").": " . $prow['phone_home'];
+            }
         }
 
-        if ($prow['phone_biz']) {
-            $patienttitle['phone_biz'] = xl("Work Phone").": " . $prow['phone_biz'];
-        }
-    }
+   }
 
  // If we have a group id, get group data
     if ($groupid) {
@@ -999,8 +1015,20 @@ if (empty($collectthis)) {
     }
 
  // Get the providers list.
+ // dh 5/17/2019  use the acl check to list all providers or just the
+ // provider that is logged in
+ if (!acl_check('patients', 'p_list')) {
+    
+    $ures = sqlStatement("SELECT id, username, fname, lname FROM users WHERE " . 
+    "authorized != 0 AND active = 1 AND id = {$userid} ORDER BY lname, fname");  
+} 
+else {
     $ures = sqlStatement("SELECT id, username, fname, lname FROM users WHERE " .
     "authorized != 0 AND active = 1 ORDER BY lname, fname");
+}
+
+
+
 
  // Get event categories.
     $cres = sqlStatement("SELECT pc_catid, pc_catname, pc_recurrtype, pc_duration, pc_end_all_day " .

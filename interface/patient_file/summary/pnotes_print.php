@@ -47,7 +47,6 @@ if ($noteid) {
 ?>
 <html>
 <head>
-<?php html_header_show();?>
 <link rel='stylesheet' href="<?php echo $css_header;?>" type="text/css">
 </head>
 
@@ -60,7 +59,7 @@ if ($noteid) {
 
 <p><?php echo xlt('Assigned To'); ?>: <?php echo text($assigned_to); ?></p>
 
-<p><?php echo xlt('Active'); ?>: <?php echo ($activity ? xlt('Yes') : xlt('No')); ?></p>
+<p><?php echo xlt('Active{{Note}}'); ?>: <?php echo ($activity ? xlt('Yes') : xlt('No')); ?></p>
 
 <p><?php echo nl2br(text($body)); ?></p>
 

@@ -47,6 +47,7 @@ if (isset($_POST["mode"])) {
 }
 //===============================================================================
 ?>
+                    <br>
                     <fieldset>
                     <legend class=""><?php echo xlt('Distribute')?></legend>
                     <div class="col-xs-12" style="padding-bottom:5px">
@@ -90,7 +91,8 @@ if (isset($_POST["mode"])) {
                 $PreviousEncounter=0;
                 $PreviousPID=0;
                 if ($RowSearch = sqlFetchArray($ResultSearchNew)) {
-                ?>
+                    ?>
+                <div class="col-xs-12">
                 <div class = "table-responsive">
                 <table class="table-condensed"   id="TableDistributePortion">
                   <thead class="" bgcolor="#dddddd">
@@ -202,7 +204,7 @@ if (isset($_POST["mode"])) {
                         } elseif ($Ins==0) {
                             $bgcolor='#AAFFFF';
                         }
-                    ?>
+                        ?>
                   <tr class="text"  bgcolor='<?php echo attr($bgcolor); ?>' id="trCharges<?php echo attr($CountIndex); ?>">
                     <td align="left" class="<?php echo attr($StringClass); ?>" ><input name="HiddenIns<?php echo attr($CountIndex); ?>" style="width:70px;text-align:right; font-size:12px" id="HiddenIns<?php echo attr($CountIndex); ?>"
                      value="<?php echo attr($Ins); ?>" type="hidden"/><?php echo generate_select_list("payment_ins$CountIndex", "payment_ins", "$Ins", "Insurance/Patient", '', 'oe-payment-select class3', 'ActionOnInsPat("'.$CountIndex.'")');?></td>
@@ -243,9 +245,9 @@ if (isset($_POST["mode"])) {
                      name="FollowUp<?php echo attr($CountIndex); ?>" value="y" onClick="ActionFollowUp(<?php echo attr_js($CountIndex); ?>)"  /></td>
                     <td  class="<?php echo attr($StringClass); ?> right"> <textarea  name="FollowUpReason<?php echo attr($CountIndex); ?>" onKeyDown="PreventIt(event)" id="FollowUpReason<?php echo attr($CountIndex); ?>" class="form-control class4" cols="5" rows="2" readonly ></textarea></td>
                   </tr>
-                <?php
+                        <?php
                     } while ($RowSearch = sqlFetchArray($ResultSearchNew));
-                ?>
+                    ?>
                  <tr class="text">
                     <td align="left" colspan="7">&nbsp;</td>
                     <td class="left bottom" bgcolor="#6699FF" id="initialallowtotal" align="right" >0</td>
@@ -258,11 +260,8 @@ if (isset($_POST["mode"])) {
                   </tr>
                 </table>
                 </div>
+                </div>
                 <br>
-                <?php
+                    <?php
                 }//if($RowSearch = sqlFetchArray($ResultSearchNew))
                 ?>
-        <!--</td>
-    </tr>
-</table>
-</div>-->

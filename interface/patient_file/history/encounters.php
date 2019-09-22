@@ -17,13 +17,14 @@ require_once("$srcdir/forms.inc");
 require_once("$srcdir/patient.inc");
 require_once("$srcdir/lists.inc");
 require_once("$srcdir/acl.inc");
-require_once("$srcdir/invoice_summary.inc.php");
 require_once("../../../custom/code_types.inc.php");
 if ($GLOBALS['enable_group_therapy']) {
     require_once("$srcdir/group.inc");
 }
 
 use OpenEMR\Billing\BillingUtilities;
+use OpenEMR\Billing\InvoiceSummary;
+use OpenEMR\Common\Csrf\CsrfUtils;
 use OpenEMR\Core\Header;
 
 $is_group = ($attendant_type == 'gid') ? true : false;
@@ -161,6 +162,7 @@ function generatePageElement($start, $pagesize, $billing, $issue, $text)
 
     echo "<A HREF='".$url."' onclick='top.restoreSession()'>" . $text . "</A>";
 }
+
 ?>
 <html>
 <head>
@@ -236,7 +238,7 @@ window.onload=function()
 // to display the form's contents.
 function efmouseover(elem, ptid, encid, formname, formid) {
  ttMouseOver(elem, "encounters_ajax.php?ptid=" + encodeURIComponent(ptid) + "&encid=" + encodeURIComponent(encid) +
-  "&formname=" + encodeURIComponent(formname) + "&formid=" + encodeURIComponent(formid) + "&csrf_token_form=" + <?php echo js_url(collectCsrfToken()); ?>);
+  "&formname=" + encodeURIComponent(formname) + "&formid=" + encodeURIComponent(formid) + "&csrf_token_form=" + <?php echo js_url(CsrfUtils::collectCsrfToken()); ?>);
 }
 
 </script>
@@ -326,7 +328,7 @@ for ($idx=0; $idx<count($pagesizes); $idx++) {
 <?php if ($billing_view) { ?>
   <th class='billing_note'><?php echo xlt('Billing Note'); ?></th>
 <?php } else { ?>
-<?php if ($attendant_type == 'pid' && !$issue) { // only for patient encounter and if listing for multiple issues?>
+    <?php if ($attendant_type == 'pid' && !$issue) { // only for patient encounter and if listing for multiple issues?>
   <th><?php echo xlt('Issue'); ?></th>
 <?php } ?>
   <th><?php echo xlt('Reason/Form'); ?></th>
@@ -440,8 +442,8 @@ while ($result4 = sqlFetchArray($res4)) {
 
         $raw_encounter_date = '';
 
-        $raw_encounter_date = date("Y-m-d", strtotime($result4{"date"}));
-        $encounter_date = date("D F jS", strtotime($result4{"date"}));
+        $raw_encounter_date = date("Y-m-d", strtotime($result4["date"]));
+        $encounter_date = date("D F jS", strtotime($result4["date"]));
 
         //fetch acl for given pc_catid
         $postCalendarCategoryACO = fetchPostCalendarCategoryACO($result4['pc_catid']);
@@ -453,8 +455,8 @@ while ($result4 = sqlFetchArray($res4)) {
     }
 
         // if ($auth_notes_a || ($auth_notes && $result4['user'] == $_SESSION['authUser']))
-    if (!empty($result4{"reason"})) {
-        $reason_string .= text($result4{"reason"}) . "<br>\n";
+    if (!empty($result4["reason"])) {
+        $reason_string .= text($result4["reason"]) . "<br>\n";
     }
 
         // else
@@ -583,12 +585,18 @@ while ($result4 = sqlFetchArray($res4)) {
                 }
                 echo "</div>";
             } else {
-                echo "<div " .
-                "onmouseover='efmouseover(this," . attr_js($pid) . "," . attr_js($result4['encounter']) .
-                "," . attr_js($formdir) . "," . attr_js($enc['form_id']) . ")' " .
-                "onmouseout='ttMouseOut()'>";
-                echo text(xl_form_title($enc['form_name']));
-                echo "</div>";
+                $formDiv = "<div ";
+                if (hasFormPermission($enc['formdir'])) {
+                    $formDiv .= "onmouseover='efmouseover(this," . attr_js($pid) . ","
+                    . attr_js($result4['encounter']) .
+                    "," . attr_js($formdir) . "," . attr_js($enc['form_id'])
+                    . ")' " .
+                    "onmouseout='ttMouseOut()'";
+                }
+                $formDiv .= ">";
+                $formDiv .= text(xl_form_title($enc['form_name']));
+                $formDiv .= "</div>";
+                echo $formDiv;
             }
         } // end encounter Forms loop
 
@@ -638,7 +646,7 @@ while ($result4 = sqlFetchArray($res4)) {
                                 "pid = ? AND encounter = ?", array($pid,$result4['encounter']));
                     $arid = 0 + $tmp['id'];
                 if ($arid) {
-                    $arinvoice = ar_get_invoice_summary($pid, $result4['encounter'], true);
+                    $arinvoice = InvoiceSummary::ar_get_invoice_summary($pid, $result4['encounter'], true);
                 }
                 if ($arid) {
                     $arlinkbeg = "<a onclick='editInvoice(event, " . attr_js($arid) . ")" . "'" . " class='text' style='color:#00cc00'>";
@@ -691,8 +699,7 @@ while ($result4 = sqlFetchArray($res4)) {
                 }
                 if ($billing_view) {
                     if ($binfo[1]) {
-                        for ($i = 1; $i < 5;
-                        ++$i) {
+                        for ($i = 1; $i < 5; ++$i) {
                             $binfo[$i] .= '<br>';
                         }
                     }
@@ -704,8 +711,7 @@ while ($result4 = sqlFetchArray($res4)) {
                             $binfo[1] .= text(oeFormatMoney($iter2['fee']));
                         }
 
-                        for ($i = 2; $i < 5;
-                        ++$i) {
+                        for ($i = 2; $i < 5; ++$i) {
                             $binfo[$i] .= '&nbsp;';
                         }
                     } else {
@@ -723,13 +729,11 @@ while ($result4 = sqlFetchArray($res4)) {
             if (!empty($arinvoice)) {
                 foreach ($arinvoice as $codekey => $val) {
                     if ($binfo[0]) {
-                        for ($i = 0; $i < 5;
-                        ++$i) {
+                        for ($i = 0; $i < 5; ++$i) {
                             $binfo[$i] .= '<br>';
                         }
                     }
-                    for ($i = 0; $i < 5;
-                    ++$i) {
+                    for ($i = 0; $i < 5; ++$i) {
                         $binfo[$i] .= "<font color='red'>";
                     }
                     $binfo[0] .= text($codekey);
@@ -737,8 +741,7 @@ while ($result4 = sqlFetchArray($res4)) {
                     $binfo[2] .= text(oeFormatMoney($val['chg'] - $val['bal']));
                     $binfo[3] .= text(oeFormatMoney($val['adj']));
                     $binfo[4] .= text(oeFormatMoney($val['bal']));
-                    for ($i = 0; $i < 5;
-                    ++$i) {
+                    for ($i = 0; $i < 5; ++$i) {
                         $binfo[$i] .= "</font>";
                     }
                 }
@@ -749,9 +752,7 @@ while ($result4 = sqlFetchArray($res4)) {
         for ($i = 1; $i < 5; ++$i) {
             echo "<td class='text right'>". $binfo[$i] . "</td>\n";
         }
-    } // end if authorized
-
-    else {
+    } /* end if authorized */ else {
         echo "<td class='text' valign='top' colspan='5' rowspan='" . attr($encounter_rows) . "'>(" . xlt("No access") . ")</td>\n";
     }
 
@@ -761,25 +762,25 @@ while ($result4 = sqlFetchArray($res4)) {
         if ($auth_demo) {
             $responsible = -1;
             if ($arid) {
-                    $responsible = ar_responsible_party($pid, $result4['encounter']);
+                    $responsible = InvoiceSummary::ar_responsible_party($pid, $result4['encounter']);
             }
             $subresult5 = getInsuranceDataByDate($pid, $raw_encounter_date, "primary");
-            if ($subresult5 && $subresult5{"provider_name"}) {
+            if ($subresult5 && $subresult5["provider_name"]) {
                 $style = $responsible == 1 ? " style='color:red'" : "";
                 $insured = "<span class='text'$style>&nbsp;" . xlt('Primary') . ": " .
-                text($subresult5{"provider_name"}) . "</span><br>\n";
+                text($subresult5["provider_name"]) . "</span><br>\n";
             }
             $subresult6 = getInsuranceDataByDate($pid, $raw_encounter_date, "secondary");
-            if ($subresult6 && $subresult6{"provider_name"}) {
+            if ($subresult6 && $subresult6["provider_name"]) {
                 $style = $responsible == 2 ? " style='color:red'" : "";
                 $insured .= "<span class='text'$style>&nbsp;" . xlt('Secondary') . ": " .
-                text($subresult6{"provider_name"}) . "</span><br>\n";
+                text($subresult6["provider_name"]) . "</span><br>\n";
             }
             $subresult7 = getInsuranceDataByDate($pid, $raw_encounter_date, "tertiary");
-            if ($subresult6 && $subresult7{"provider_name"}) {
+            if ($subresult6 && $subresult7["provider_name"]) {
                 $style = $responsible == 3 ? " style='color:red'" : "";
                 $insured .= "<span class='text'$style>&nbsp;" . xlt('Tertiary') . ": " .
-                text($subresult7{"provider_name"}) . "</span><br>\n";
+                text($subresult7["provider_name"]) . "</span><br>\n";
             }
             if ($responsible == 0) {
                 $insured .= "<span class='text' style='color:red'>&nbsp;" . xlt('Patient') .
@@ -823,7 +824,7 @@ while ($drow /* && $count <= $N */) {
 <script language="javascript">
 // jQuery stuff to make the page a little easier to use
 
-$(document).ready(function(){
+$(function() {
     $(".encrow").on("mouseover", function() { $(this).toggleClass("highlight"); });
     $(".encrow").on("mouseout", function() { $(this).toggleClass("highlight"); });
     $(".encrow").on("click", function() { toencounter(this.id); });

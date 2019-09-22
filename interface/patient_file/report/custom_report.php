@@ -40,6 +40,10 @@ $facilityService = new FacilityService();
 $GLOBALS['PATIENT_REPORT_ACTIVE'] = true;
 
 $PDF_OUTPUT = empty($_POST['pdf']) ? 0 : intval($_POST['pdf']);
+$PDF_FAX = empty($_POST['fax']) ? 0 : intval($_POST['fax']);
+if ($PDF_FAX) {
+    $PDF_OUTPUT = 1;
+}
 
 if ($PDF_OUTPUT) {
     $config_mpdf = array(
@@ -163,22 +167,21 @@ function postToGet($arin)
 </style>
 
 <?php if (!$PDF_OUTPUT) { ?>
-
 <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery/dist/jquery.min.js"></script>
 <script type="text/javascript" src="<?php echo $GLOBALS['web_root']?>/library/js/SearchHighlight.js"></script>
 <script type="text/javascript">var $j = jQuery.noConflict();</script>
 
-<?php // if the track_anything form exists, then include the styling
-if (file_exists(dirname(__FILE__) . "/../../forms/track_anything/style.css")) { ?>
+    <?php // if the track_anything form exists, then include the styling
+    if (file_exists(dirname(__FILE__) . "/../../forms/track_anything/style.css")) { ?>
  <link rel="stylesheet" href="<?php echo $GLOBALS['web_root']?>/interface/forms/track_anything/style.css" type="text/css">
-<?php  } ?>
+    <?php  } ?>
 
 </head>
-<?php
+    <?php
 // remove blank header for printable version to conserve space
 // adjust this if you are printing to letterhead to appropriate height
-($printable) ? ($style = ''):($style='padding-top:95px;');
-?>
+    ($printable) ? ($style = ''):($style='padding-top:95px;');
+    ?>
 <body class="body_top" style="<?php echo $style; ?>">
 <?php } ?>
 <div id="report_custom" style="width: 100%;">  <!-- large outer DIV -->
@@ -227,15 +230,15 @@ if ($printable) {
     }
     ?>
     <h2><?php echo text($facility['name']); ?></h2>
-<?php echo text($facility['street']); ?><br>
-<?php echo text($facility['city']); ?>, <?php echo text($facility['state']); ?> <?php echo text($facility['postal_code']); ?><br clear='all'>
-<?php echo text($facility['phone']); ?><br>
+    <?php echo text($facility['street']); ?><br>
+    <?php echo text($facility['city']); ?>, <?php echo text($facility['state']); ?> <?php echo text($facility['postal_code']); ?><br clear='all'>
+    <?php echo text($facility['phone']); ?><br>
 
-<a href="javascript:window.close();"><span class='title'><?php echo text($titleres['fname']) . " " . text($titleres['lname']); ?></span></a><br>
+<a href="javascript:window.close();"><span class='title'><?php echo xlt('Patient') . ": " . text($titleres['fname']) . " " . text($titleres['lname']); ?></span></a><br>
 <span class='text'><?php echo xlt('Generated on'); ?>: <?php echo text(oeFormatShortDate()); ?></span>
-<?php echo "</td></tr></tbody></table></div>";?>
+    <?php echo "</td></tr></tbody></table></div>";?>
 
-<?php
+    <?php
 } else { // not printable
     ?>
 
@@ -314,7 +317,7 @@ if ($printable) {
 // include ALL form's report.php files
 $inclookupres = sqlStatement("select distinct formdir from forms where pid = ? AND deleted=0", array($pid));
 while ($result = sqlFetchArray($inclookupres)) {
-  // include_once("{$GLOBALS['incdir']}/forms/" . $result{"formdir"} . "/report.php");
+  // include_once("{$GLOBALS['incdir']}/forms/" . $result["formdir"] . "/report.php");
     $formdir = $result['formdir'];
     if (substr($formdir, 0, 3) == 'LBF') {
         include_once($GLOBALS['incdir'] . "/forms/LBF/report.php");
@@ -349,7 +352,7 @@ foreach ($ar as $key => $val) {
             //print the recurring days to screen
             if (empty($recurrences)) { //if there are no recurrent appointments:
                 echo "<div class='text' >";
-                echo "<span>" . xlt('None') . "</span>";
+                echo "<span>" . xlt('None{{Appointment}}') . "</span>";
                 echo "</div>";
                 echo "<br>";
             } else {
@@ -521,7 +524,7 @@ foreach ($ar as $key => $val) {
             // echo $sql;
             $result = sqlStatement($sql, array($pid));
             while ($row=sqlFetchArray($result)) {
-                echo text($row{'batchcom_data'}) . ", By: " . text($row{'user_name'}) . "<br>Text:<br> " . text($row{'msg_txt'}) . "<br>\n";
+                echo text($row['batchcom_data']) . ", By: " . text($row['user_name']) . "<br>Text:<br> " . text($row['msg_txt']) . "<br>\n";
             }
 
             echo "</div>\n";
@@ -621,10 +624,8 @@ foreach ($ar as $key => $val) {
                     if ($PDF_OUTPUT && $extension == ".pdf") {
                         echo "</div></div>\n"; // HTML to PDF conversion will fail if there are open tags.
                         $content = getContent();
-                        $pdf->writeHTML($content, false); // catch up with buffer.
-                        $pdf->SetImportUse();
+                        $pdf->writeHTML($content); // catch up with buffer.
                         $pg_header = "<span>" . xlt('Document') . " " . text($fname) ."</span>";
-                        //$pdf->SetHTMLHeader ($pg_header,'left',false); // A header for imported doc, don't think we need but will keep.
                         $tempDocC = new C_Document;
                         $pdfTemp = $tempDocC->retrieve_action($d->get_foreign_id(), $document_id, false, true, true, true);
                         // tmp file in temporary_files_dir
@@ -639,7 +640,7 @@ foreach ($ar as $key => $val) {
                         unlink($from_file_tmp_name);
 
                         // Make sure whatever follows is on a new page.
-                        // $pdf->AddPage(); // Only needed for signature line. Patched out 04/20/2017 sjpadgett.
+                        $pdf->AddPage();
 
                         // Resume output buffering and the above-closed tags.
                         ob_start();
@@ -668,8 +669,7 @@ foreach ($ar as $key => $val) {
                 } // end if-else
             } // end Documents loop
             echo "</div>";
-        } // Procedures is an array of checkboxes whose values are procedure order IDs.
-        else if ($key == "procedures") {
+        } else if ($key == "procedures") { // Procedures is an array of checkboxes whose values are procedure order IDs.
             if ($auth_med) {
                 echo "<hr />";
                 echo "<div class='text documents'>";
@@ -821,7 +821,10 @@ if ($printable && ! $PDF_OUTPUT) {// Patched out of pdf 04/20/2017 sjpadgett
 if ($PDF_OUTPUT) {
     $content = getContent();
     $ptd = getPatientData($pid, "fname,lname");
-    $fn = strtolower($ptd['fname'] . '_' . $ptd['lname'] . '_' . $pid . '_' . xl('report') . '.pdf');
+    // escape names for pesky periods hyphen etc.
+    $esc = $ptd['fname'] . '_' . $ptd['lname'];
+    $esc = str_replace(array('.', ',', ' '), '', $esc);
+    $fn = basename_international(strtolower($esc . '_' . $pid . '_' . xl('report') . '.pdf'));
     $pdf->SetTitle(ucfirst($ptd['fname']) . ' ' . $ptd['lname'] . ' ' . xl('Id') . ':' . $pid . ' ' . xl('Report'));
     $isit_utf8 = preg_match('//u', $content); // quick check for invalid encoding
     if (! $isit_utf8) {
@@ -834,14 +837,22 @@ if ($PDF_OUTPUT) {
     }
 
     try {
-        $pdf->writeHTML($content, false); // convert html
+        $pdf->writeHTML($content); // convert html
     } catch (MpdfException $exception) {
         die(text($exception));
     }
 
     if ($PDF_OUTPUT == 1) {
         try {
-            $pdf->Output($fn, $GLOBALS['pdf_output']); // D = Download, I = Inline
+            if ($PDF_FAX === 1) {
+                $fax_pdf = $pdf->Output($fn, 'S');
+                $tmp_file = $GLOBALS['temporary_files_dir'] . '/' . $fn; // is deleted in sendFax...
+                file_put_contents($tmp_file, $fax_pdf);
+                echo $tmp_file;
+                exit();
+            } else {
+                $pdf->Output($fn, $GLOBALS['pdf_output']); // D = Download, I = Inline
+            }
         } catch (MpdfException $exception) {
             die(text($exception));
         }
@@ -873,9 +884,8 @@ if ($PDF_OUTPUT) {
         unlink($tmp_file);
     }
 } else {
-?>
-</body>
-<?php if (!$printable) { // Set up translated strings for use by interactive search ?>
+    ?>
+    <?php if (!$printable) { // Set up translated strings for use by interactive search ?>
 <script type="text/javascript">
 var xl_string = <?php echo json_encode(array(
     'spcl_chars' => xla('Special characters are not allowed').'.',
@@ -883,9 +893,10 @@ var xl_string = <?php echo json_encode(array(
     'results'    => xla('Showing result'),
     'literal_of' => xla('of'),
 ));
-?>;
+                ?>;
 </script>
 <script type="text/javascript" src="<?php echo $GLOBALS['web_root']?>/interface/patient_file/report/custom_report.js?v=<?php echo $v_js_includes; ?>"></script>
 <?php } ?>
+</body>
 </html>
 <?php } ?>

@@ -38,23 +38,21 @@ require_once("../globals.php");
 //
 // Build a list of valid entries
 $emr_app = array();
-if ($GLOBALS['new_tabs_layout']) {
-    $rs = sqlStatement(
-        "SELECT option_id, title,is_default FROM list_options
-			WHERE list_id=? and activity=1 ORDER BY seq, option_id",
-        array ('apps')
-    );
-    if (sqlNumRows($rs)) {
-        while ($app = sqlFetchArray($rs)) {
-            $app_req = explode('?', trim($app['title']));
-            if (! file_exists('../'.$app_req[0])) {
-                continue;
-            }
+$rs = sqlStatement(
+    "SELECT option_id, title,is_default FROM list_options
+        WHERE list_id=? and activity=1 ORDER BY seq, option_id",
+    array ('apps')
+);
+if (sqlNumRows($rs)) {
+    while ($app = sqlFetchArray($rs)) {
+        $app_req = explode('?', trim($app['title']));
+        if (! file_exists('../'.$app_req[0])) {
+            continue;
+        }
 
-                $emr_app [trim($app ['option_id'])] = trim($app ['title']);
-            if ($app ['is_default']) {
-                $emr_app_def = $app ['option_id'];
-            }
+            $emr_app [trim($app ['option_id'])] = trim($app ['title']);
+        if ($app ['is_default']) {
+            $emr_app_def = $app ['option_id'];
         }
     }
 }
@@ -121,19 +119,19 @@ if (count($emr_app)) {
             'genericError' => xla('Error. Try again later'),
             'closeTooltip' => ''
         ));
-        ?>;
+                                    ?>;
 
         var registrationConstants = <?php echo json_encode(array(
             'webroot' => $GLOBALS['webroot']
         ))
-        ?>;
+                                    ?>;
     </script>
 
     <script type="text/javascript" src="<?php echo $webroot ?>/interface/product_registration/product_registration_service.js?v=<?php echo $v_js_includes; ?>"></script>
     <script type="text/javascript" src="<?php echo $webroot ?>/interface/product_registration/product_registration_controller.js?v=<?php echo $v_js_includes; ?>"></script>
 
     <script type="text/javascript">
-        jQuery(document).ready(function() {
+        $(function() {
             init();
 
             var productRegistrationController = new ProductRegistrationController();
@@ -151,18 +149,14 @@ if (count($emr_app)) {
         }
 
         function transmit_form() {
-            document.forms[0].submit();
-        }
-
-        function imsubmitted() {
             <?php if (!empty($GLOBALS['restore_sessions'])) { ?>
                 // Delete the session cookie by setting its expiration date in the past.
                 // This forces the server to create a new session ID.
                 var olddate = new Date();
                 olddate.setFullYear(olddate.getFullYear() - 1);
-                document.cookie = '<?php echo session_name() . '=' . session_id() ?>; path=<?php echo($web_root ? $web_root : '/');?>; expires=' + olddate.toGMTString();
+                document.cookie = <?php echo json_encode(urlencode(session_name())); ?> + '=' + <?php echo json_encode(urlencode(session_id())); ?> + '; path=<?php echo($web_root ? $web_root : '/');?>; expires=' + olddate.toGMTString();
             <?php } ?>
-            return false; //Currently the submit action is handled by the encrypt_form().
+            document.forms[0].submit();
         }
     </script>
 
@@ -170,8 +164,7 @@ if (count($emr_app)) {
 <body class="login">
     <div class="container">
         <form method="POST" id="login_form" autocomplete="off"
-            action="../main/main_screen.php?auth=login&site=<?php echo attr($_SESSION['site_id']); ?>"
-            target="_top" name="login_form" onsubmit="return imsubmitted();">
+            action="../main/main_screen.php?auth=login&site=<?php echo attr($_SESSION['site_id']); ?>" target="_top" name="login_form">
             <div class="row">
                 <div class="col-sm-12">
                     <div>
@@ -189,7 +182,7 @@ if (count($emr_app)) {
                         }
 
                         if (count($result) == 1) {
-                              $resvalue = $result[0]{"name"};
+                              $resvalue = $result[0]["name"];
                               echo "<input type='hidden' name='authProvider' value='" . attr($resvalue) . "' />\n";
                         }
 
@@ -200,8 +193,8 @@ if (count($emr_app)) {
                         }
 
                         if (count($result2) == 1) {
-                            $defaultLangID = $result2[0]{"lang_id"};
-                            $defaultLangName = $result2[0]{"lang_description"};
+                            $defaultLangID = $result2[0]["lang_id"];
+                            $defaultLangName = $result2[0]["lang_description"];
                         } else {
                             //default to english if any problems
                             $defaultLangID = 1;
@@ -259,13 +252,13 @@ if (count($emr_app)) {
                             <?php echo xlt('Password security has recently been upgraded.').'&nbsp;&nbsp;'.xlt('Please login again.'); ?>
                         </strong>
                     </div>
-                    <?php unset($_SESSION['relogin']);
+                        <?php unset($_SESSION['relogin']);
                     endif;
-if (isset($_SESSION['loginfailure']) && ($_SESSION['loginfailure'] == 1)) : // Begin login failure block ?>
+                    if (isset($_SESSION['loginfailure']) && ($_SESSION['loginfailure'] == 1)) : // Begin login failure block ?>
                     <div class="alert alert-danger login-failure m-1">
-                        <?php echo xlt('Invalid username or password'); ?>
+                                            <?php echo xlt('Invalid username or password'); ?>
                     </div>
-                    <?php endif; // End login failure block?>
+                                        <?php endif; // End login failure block?>
                 </div>
             </div>
             <div class="row">
@@ -293,18 +286,18 @@ if (isset($_SESSION['loginfailure']) && ($_SESSION['loginfailure'] == 1)) : // B
                             <div class="col-sm-12 center-block">
                                 <?php echo $tinylogocode1; ?>
                             </div>
-                        <?php
+                            <?php
                         endif;
                         if ($t2 && !$t1) : ?>
                             <div class="col-sm-12 center-block">
                                 <?php echo $tinylogocode2; ?>
                             </div>
-                        <?php
+                            <?php
                         endif;
                         if ($t1 && $t2) : ?>
                             <div class="col-sm-6 center-block"><?php echo $tinylogocode1;?></div>
                             <div class="col-sm-6 center-block"><?php echo $tinylogocode2;?></div>
-                        <?php
+                            <?php
                         endif;
                         ?>
                     </div>
@@ -315,7 +308,7 @@ if (isset($_SESSION['loginfailure']) && ($_SESSION['loginfailure'] == 1)) : // B
                                 <select name="authProvider" class="form-control">
                                     <?php
                                     foreach ($result as $iter) {
-                                        echo "<option value='".attr($iter{"name"})."'>".text($iter{"name"})."</option>\n";
+                                        echo "<option value='".attr($iter["name"])."'>".text($iter["name"])."</option>\n";
                                     }
                                     ?>
                                 </select>

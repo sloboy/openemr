@@ -5,18 +5,18 @@
  * @package   OpenEMR
  * @link      http://www.open-emr.org
  * @author    Julia Longtin
- * @author Stephen Waite <stephen.waite@cmsvt.com>
+ * @author    Stephen Waite <stephen.waite@cmsvt.com>
  * @copyright Copyright (c) 2012 Julia Longtin
- * @copyright Copyright (c) 2018 Stephen Waite <stephen.waite@cmsvt.com>
+ * @copyright Copyright (c) 2018-2019 Stephen Waite <stephen.waite@cmsvt.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
 require_once("../globals.php");
 require_once("$srcdir/patient.inc");
-require_once("$srcdir/../interface/reports/report.inc.php");
-require_once("$srcdir/billrep.inc");
 require_once("$srcdir/forms.inc");
 require_once("$srcdir/report.inc");
+
+use OpenEMR\Billing\BillingReport;
 
 //how many columns to use when displaying information
 $COLS=6;
@@ -64,7 +64,6 @@ if (!isset($_GET["mode"])) {
 
 <html>
 <head>
-<?php html_header_show();?>
 
 <link rel=stylesheet href="<?php echo $css_header;?>" type="text/css">
 
@@ -91,7 +90,7 @@ if ($code_type == "all") {
     $code_type = "%";
 }
 
-$list = getBillsListBetween($code_type);
+$list = BillingReport::getBillsListBetween($code_type);
 
 if (!isset($_GET["mode"])) {
     if (!isset($_GET["from_date"])) {
@@ -147,23 +146,23 @@ if ($code_type == "all") {
     $code_type = "%";
 }
 
-$list = getBillsListBetween($code_type);
+$list = BillingReport::getBillsListBetween($code_type);
 
 if (isset($_GET["mode"]) && $_GET["mode"] == "bill") {
-    billCodesList($list);
+    BillingReport::billCodesList($list);
 }
 
 $res_count = 0;
 $N = 1;
 
 $itero = array();
-if ($ret = getBillsBetweenReport($code_type)) {
+if ($ret = BillingReport::getBillsBetweenReport($code_type)) {
     $old_pid = -1;
     $first_time = 1;
     $encid = 0;
     foreach ($ret as $iter) {
-        if ($old_pid != $iter{"pid"}) {
-            $name = getPatientData($iter{"pid"});
+        if ($old_pid != $iter["pid"]) {
+            $name = getPatientData($iter["pid"]);
             if (!$first_time) {
                 print "</tr></table>\n";
                 print "</td><td>";
@@ -173,31 +172,31 @@ if ($ret = getBillsBetweenReport($code_type)) {
                 $first_time=0;
             }
 
-            print "<tr><td colspan=5><hr><span class=bold>" . text($name{"fname"}) . " " . text($name{"lname"}) . "</span><br><br>\n";
+            print "<tr><td colspan=5><hr><span class=bold>" . text($name["fname"]) . " " . text($name["lname"]) . "</span><br><br>\n";
             //==================================
 
 
             print "<font class=bold>" . xlt("Patient Data") . ":</font><br>";
-            printRecDataOne($patient_data_array, getRecPatientData($iter{"pid"}), $COLS);
+            printRecDataOne($patient_data_array, getRecPatientData($iter["pid"]), $COLS);
 
             print "<font class=bold>" . xlt("Employer Data") . ":</font><br>";
-            printRecDataOne($employer_data_array, getRecEmployerData($iter{"pid"}), $COLS);
+            printRecDataOne($employer_data_array, getRecEmployerData($iter["pid"]), $COLS);
 
             print "<font class=bold>" . xlt("Primary Insurance Data") . ":</font><br>";
-            printRecDataOne($insurance_data_array, getRecInsuranceData($iter{"pid"}, "primary"), $COLS);
+            printRecDataOne($insurance_data_array, getRecInsuranceData($iter["pid"], "primary"), $COLS);
 
             print "<font class=bold>" . xlt("Secondary Insurance Data") . ":</font><br>";
-            printRecDataOne($insurance_data_array, getRecInsuranceData($iter{"pid"}, "secondary"), $COLS);
+            printRecDataOne($insurance_data_array, getRecInsuranceData($iter["pid"], "secondary"), $COLS);
 
             print "<font class=bold>" . xlt("Tertiary Insurance Data") . ":</font><br>";
-            printRecDataOne($insurance_data_array, getRecInsuranceData($iter{"pid"}, "tertiary"), $COLS);
+            printRecDataOne($insurance_data_array, getRecInsuranceData($iter["pid"], "tertiary"), $COLS);
 
             //==================================
             print "</td></tr><tr>\n";
-            $old_pid = $iter{"pid"};
+            $old_pid = $iter["pid"];
         }
 
-        print "<td width=100><span class=text>" . text($iter{"code_type"}) . ": </span></td><td width=100><span class=text>" . text($iter{"code"}) . "</span></td><td width=100><span class=small>(" . text(date("Y-m-d", strtotime($iter{"date"}))) . ")</span></td>\n";
+        print "<td width=100><span class=text>" . text($iter["code_type"]) . ": </span></td><td width=100><span class=text>" . text($iter["code"]) . "</span></td><td width=100><span class=small>(" . text(date("Y-m-d", strtotime($iter["date"]))) . ")</span></td>\n";
         $res_count++;
         if ($res_count == $N) {
             print "</tr><tr>\n";

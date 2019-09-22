@@ -18,9 +18,10 @@ require_once("$srcdir/report.inc");
 require_once("$srcdir/options.inc.php");
 
 use OpenEMR\Billing\BillingUtilities;
+use OpenEMR\Common\Csrf\CsrfUtils;
 
-if (!verifyCsrfToken($_GET["csrf_token_form"])) {
-    csrfNotVerified();
+if (!CsrfUtils::verifyCsrfToken($_GET["csrf_token_form"])) {
+    CsrfUtils::csrfNotVerified();
 }
 
 $N = 6;
@@ -28,7 +29,6 @@ $first_issue = 1;
 ?>
 <html>
 <head>
-<?php html_header_show();?>
 <link rel=stylesheet href="<?php echo $css_header;?>" type="text/css">
 </head>
 
@@ -59,14 +59,14 @@ if (file_exists($practice_logo)) {
 
 </p>
 
-<a href="javascript:window.close();"><font class=title><?php print text($titleres{"fname"}) . " " . text($titleres{"lname"}); ?></font></a><br><br>
+<a href="javascript:window.close();"><font class=title><?php print text($titleres["fname"]) . " " . text($titleres["lname"]); ?></font></a><br><br>
 
 <table>
 <tr><td><?php echo xlt('Generated on'); ?>:</td><td> <?php print text(oeFormatShortDate(date("Y-m-d")));?></td></tr>
 <?php
 if ($date_result = sqlQuery("select date from form_encounter where encounter=? and pid=?", array($encounter, $pid))) {
-    $encounter_date = date("D F jS", strtotime($date_result{"date"}));
-    $raw_encounter_date = date("Y-m-d", strtotime($date_result{"date"}));
+    $encounter_date = date("D F jS", strtotime($date_result["date"]));
+    $raw_encounter_date = date("Y-m-d", strtotime($date_result["date"]));
 }
 ?>
 <tr><td><?php echo xlt('Date Of Service'); ?>: </td><td> <?php print text(oeFormatShortDate($raw_encounter_date));?></td></tr>
@@ -79,7 +79,7 @@ if ($date_result = sqlQuery("select date from form_encounter where encounter=? a
 
  $inclookupres = sqlStatement("select distinct formdir from forms where pid=?", array($pid));
 while ($result = sqlFetchArray($inclookupres)) {
-    include_once("{$GLOBALS['incdir']}/forms/" . $result{"formdir"} . "/report.php");
+    include_once("{$GLOBALS['incdir']}/forms/" . $result["formdir"] . "/report.php");
 }
 
  $printed = false;
@@ -95,12 +95,12 @@ if ($result = BillingUtilities::getBillingByEncounter($pid, $encounter, "*")) {
     $copay = 0.0;
 
 //test
-//	foreach ($result as $key => $val) {
-//		print "<h2>$key</h2>";
-//		foreach($val as $key2 => $val2) {
-//			print "<p> $key2 = $val2 </p>\n";
-//		}
-//	}
+//  foreach ($result as $key => $val) {
+//      print "<h2>$key</h2>";
+//      foreach($val as $key2 => $val2) {
+//          print "<p> $key2 = $val2 </p>\n";
+//      }
+//  }
 //end test
 
     foreach ($result as $iter) {
@@ -146,28 +146,28 @@ if ($result = BillingUtilities::getBillingByEncounter($pid, $encounter, "*")) {
     }
 
     $billing_html["CPT4"] .= "<tr><td>" . xlt('total') . "</td><td></td><td></td><td>" . text(oeFormatMoney($total)) . "</td></tr>\n";
-?>
+    ?>
 <tr><td><?php echo xlt('code type'); ?></td><td><?php echo xlt('code'); ?></td><td><?php echo xlt('description'); ?></td><td><?php echo xlt('fee'); ?></td></tr>
-<?php
+    <?php
     $key = "ICD9";
-$val = $billing_html[$key];
+    $val = $billing_html[$key];
         print $val;
     $key = "CPT4";
-$val = $billing_html[$key];
+    $val = $billing_html[$key];
         print $val;
     $key = "COPAY";
-$val = $billing_html[$key];
+    $val = $billing_html[$key];
         print $val;
-$balance = $total-$copay;
-if ($balance != 0.00) {
-    print "<tr><td>" . xlt('balance') . "</td><td></td><td>" . xlt('Please pay this amount') . ":</td><td>" . text(oeFormatMoney($balance)) . "</td></tr>\n";
-}
+    $balance = $total-$copay;
+    if ($balance != 0.00) {
+        print "<tr><td>" . xlt('balance') . "</td><td></td><td>" . xlt('Please pay this amount') . ":</td><td>" . text(oeFormatMoney($balance)) . "</td></tr>\n";
+    }
 }
 ?>
 </tr></table>
 <?php
 //if ($balance != 0.00) {
-//	print "<p>Note: The balance recorded above only reflects the encounter described by this statement.  It does not reflect the balance of the entire account.  A negative number in the balance field indicates a credit due to overpayment</p>";
+//  print "<p>Note: The balance recorded above only reflects the encounter described by this statement.  It does not reflect the balance of the entire account.  A negative number in the balance field indicates a credit due to overpayment</p>";
 //}
 ?>
 

@@ -14,8 +14,10 @@
 
 require_once("../../globals.php");
 
-if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-    csrfNotVerified();
+use OpenEMR\Common\Csrf\CsrfUtils;
+
+if (!CsrfUtils::verifyCsrfToken($_POST["csrf_token_form"])) {
+    CsrfUtils::csrfNotVerified();
 }
 
 /**
@@ -57,9 +59,9 @@ if ($result != null) {
     $disclosure_count = 0;//number of disclosures so far displayed
     foreach ($result as $iter) {
         $has_disclosure = 1;
-        $app_event=$iter{"event"};
+        $app_event=$iter["event"];
         $event=explode("-", $app_event);
-        $description=$iter{"description"};
+        $description=$iter["description"];
         //listing the disclosures
         echo "<tr style='border-bottom:1px dashed' class='text'>";
             echo "<td valign='top' class='text'>";
@@ -74,7 +76,7 @@ if ($result != null) {
             echo "</td>";
             echo "<td>" . text($iter['user_fullname']) . "</td>";
             echo "<td  valign='top'class='text'>";
-            echo text($iter{"date"}." (".xl('Recipient').":".$iter{"recipient"}.")");
+            echo text($iter["date"]." (".xl('Recipient').":".$iter["recipient"].")");
                     echo " " . nl2br(text($description));
             echo "</td>";
         echo "</tr>";
@@ -86,20 +88,20 @@ if ($result != null) {
 if ($has_disclosure == 0) { //If there are no disclosures recorded
     ?>
     <span class='text'>
-<?php
-  echo xlt("There are no disclosures recorded for this patient.");
-if (acl_check('patients', 'disclosure', '', array('write', 'addonly'))) {
-    echo " ";
-    echo xlt("To record disclosures, please click");
-    echo " <a href='disclosure_full.php'>";
-    echo xlt("here");
-    echo "</a>.";
-}
-?>
+    <?php
+    echo xlt("There are no disclosures recorded for this patient.");
+    if (acl_check('patients', 'disclosure', '', array('write', 'addonly'))) {
+        echo " ";
+        echo xlt("To record disclosures, please click");
+        echo " <a href='disclosure_full.php'>";
+        echo xlt("here");
+        echo "</a>.";
+    }
+    ?>
     </span>
-<?php
+    <?php
 } else {
-?>
+    ?>
     <br />
     <span class='text'> <?php
     echo xlt('Displaying the following number of most recent disclosures:');?><b><?php echo " " . text($N); ?></b><br>

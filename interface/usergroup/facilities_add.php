@@ -15,6 +15,7 @@ require_once("../../library/acl.inc");
 require_once("$srcdir/options.inc.php");
 require_once("$srcdir/erx_javascript.inc.php");
 
+use OpenEMR\Common\Csrf\CsrfUtils;
 use OpenEMR\Core\Header;
 use OpenEMR\Services\FacilityService;
 
@@ -129,7 +130,7 @@ function toggle( target, div ) {
 
 }
 
-$(document).ready(function(){
+$(function(){
 
     $("#dem_view").click( function() {
         toggle( $(this), "#DEM" );
@@ -137,7 +138,7 @@ $(document).ready(function(){
 
 });
 
-$(document).ready(function(){
+$(function(){
     $("#cancel").click(function() {
           dlgclose();
      });
@@ -190,7 +191,7 @@ function displayAlert()
 <br>
 
 <form name='facility-add' id='facility-add' method='post' action="facilities.php">
-    <input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+    <input type="hidden" name="csrf_token_form" value="<?php echo attr(CsrfUtils::collectCsrfToken()); ?>" />
     <input type=hidden name=mode value="facility">
     <table border=0 cellpadding=0 cellspacing=0>
         <tr>
@@ -225,9 +226,14 @@ function displayAlert()
         </tr>
         <tr>
         <td><span class="text"><?php echo xlt('Website'); ?>: </span></td><td><input type=entry size=20 name=website value=""></td>
-        <td>&nbsp;</td>
+        <td> </td>
         <td><span class="text"><?php echo xlt('Email'); ?>: </span></td><td><input type=entry size=20 name=email value=""></td>
         </tr>
+        <tr>
+            <td><span class="text"><?php echo xlt('IBAN'); ?>: </span></td><td><input type=entry size=20 name=iban value=""></td>
+            <td> </td>
+        </tr>
+
 
         <tr>
           <td><span class='text'><?php echo xlt('Billing Location'); ?>: </span></td><td><input type='checkbox' name='billing_location' value = '1'></td>

@@ -55,6 +55,16 @@ function generate_list_payment_category($tag_name, $list_id, $currvalue, $title,
     return $s;
 }
 // ================================================================================================
+$CheckNumber = '';
+$CheckDate = '';
+$PaymentMethod = '';
+$PaymentType = '';
+$AdjustmentCode = '';
+$div_after_save = '';
+$DepositDate = '';
+$Description = '';
+$TypeCode = '';
+$UndistributedAmount = 0;
 if ($payment_id > 0) {
     $rs = sqlStatement("select pay_total,global_amount from ar_session where session_id=?", array($payment_id));
     $row = sqlFetchArray($rs);
@@ -109,37 +119,37 @@ if ($payment_id > 0) {
 <?php
 //================================================================================================
 if (($screen=='new_payment' && $payment_id*1==0) || ($screen=='edit_payment' && $payment_id*1>0)) {//New entry or edit in edit screen comes here.
-?>
+    ?>
         <?php
-        if ($_REQUEST['ParentPage']=='new_payment') {//This case comes when the Finish Payments is pressed from the New Payment screen.
+        if (isset($_REQUEST['ParentPage']) && $_REQUEST['ParentPage']=='new_payment') {//This case comes when the Finish Payments is pressed from the New Payment screen.
             ?>
             <div class="col-xs-12 h3">
             <?php echo xlt('Confirm Payment'); ?>
             </div>
 
-        <?php
+            <?php
         } elseif ($screen=='new_payment') {
             ?>
             <div class="col-xs-12 h3">
                 <?php echo xlt('Batch Payment Entry'); ?>
             </div>
-        <?php
+            <?php
         } else {
             ?>
             <div class="col-xs-12 h3">
                 <?php echo xlt('Edit Payment'); ?>
             </div>
-        <?php
+            <?php
         }
-            ?>
+        ?>
                     <div class="col-xs-12 oe-custom-line">
                         <div class="forms col-xs-3">
                             <label class="control-label" for="check_date"><?php echo xlt('Date'); ?>:</label>
-                            <input class="form-control datepicker" id='check_date' name='check_date' type='text' value="<?php echo attr(oeFormatShortDate($CheckDate));?>">
+                            <input class="form-control datepicker" id='check_date' name='check_date' type='text' value="<?php echo attr(oeFormatShortDate($CheckDate));?>" autocomplete="off">
                         </div>
                         <div class="forms col-xs-3">
                             <label class="control-label" for="post_to_date"><?php echo xlt('Post To Date'); ?>:</label>
-                            <input class="form-control datepicker" id='post_to_date' name='post_to_date' type='text' value="<?php echo ($screen=='new_payment') ? attr(oeFormatShortDate(date('Y-m-d'))) : attr(oeFormatShortDate($PostToDate));?>">
+                            <input class="form-control datepicker" id='post_to_date' name='post_to_date' type='text' value="<?php echo ($screen=='new_payment') ? attr(oeFormatShortDate(date('Y-m-d'))) : attr(oeFormatShortDate($PostToDate));?>" autocomplete="off">
                         </div>
                         <div class="forms col-xs-3">
                             <label class="control-label" for="payment_method"><?php echo xlt('Payment Method'); ?>:</label>
@@ -228,7 +238,7 @@ if (($screen=='new_payment' && $payment_id*1==0) || ($screen=='edit_payment' && 
                     <div class="col-xs-12 oe-custom-line">
                         <div class="col-xs-3">
                             <label class="control-label" for="deposit_date"><?php echo xlt('Deposit Date'); ?>:</label>
-                            <input type='text' class='form-control datepicker' name='deposit_date' id='deposit_date'  onKeyDown="PreventIt(event)"  value="<?php echo attr(oeFormatShortDate($DepositDate));?>"/>
+                            <input type='text' class='form-control datepicker' name='deposit_date' id='deposit_date'  onKeyDown="PreventIt(event)"  value="<?php echo attr(oeFormatShortDate($DepositDate));?>" autocomplete="off"/>
                         </div>
                         <div class="col-xs-6">
                             <label class="control-label" for="description"><?php echo xlt('Description'); ?>:</label>
@@ -255,13 +265,13 @@ if (($screen=='new_payment' && $payment_id*1==0) || ($screen=='edit_payment' && 
                         </div>
                     </div>
                 </div>
-<?php
+    <?php
 }//if(($screen=='new_payment' && $payment_id*1==0) || ($screen=='edit_payment' && $payment_id*1>0))
 //================================================================================================
 ?>
 <?php
 if ($screen=='new_payment' && $payment_id*1>0) {//After saving from the New Payment screen,all values are  showed as labels.The date picker images are also removed.
-?>
+    ?>
                     <div class="col-xs-12 h3">
                         <?php echo xlt('Batch Payment Entry'); ?>
                     </div>
@@ -275,10 +285,11 @@ if ($screen=='new_payment' && $payment_id*1>0) {//After saving from the New Paym
                             <input class="form-control" id='post_to_date' name='post_to_date' type='text' value="<?php echo ($screen=='new_payment') ? attr(oeFormatShortDate(date('Y-m-d'))) : attr(oeFormatShortDate($PostToDate));?>"disabled>
                         </div>
                         <div class="forms col-xs-3">
-                            <label class="control-label" for="payment_method1"><?php echo xlt('Payment Method'); ?>:</label>
-                            <input type="text" class="form-control" name="payment_method1" id="payment_method1" value="<?php $frow['data_type']=1;
-                            $frow['list_id']='payment_method';
-                            generate_print_field($frow, $PaymentMethod);?>" disabled />
+                            <label class="control-label" for="payment_method"><?php echo xlt('Payment Method'); ?>:</label>
+                            <input type="text" class="form-control" name="payment_method1" id="payment_method" value="<?php
+                            $list='payment_method';
+                            $option=$PaymentMethod;
+                            echo getListItemTitle($list, $option);?>" disabled />
                             <input type="hidden" name="payment_method" value="<?php echo attr($PaymentMethod);?>"/>
                         </div>
                         <div class="forms col-xs-3">
@@ -294,16 +305,18 @@ if ($screen=='new_payment' && $payment_id*1>0) {//After saving from the New Paym
                         </div>
                         <div class="forms col-xs-3">
                             <label class="control-label" for="type_name"><?php echo xlt('Paying Entity'); ?>:</label>
-                            <input type="text" class="form-control" name="type_name1" id="type_name1" value="<?php  $frow['data_type']=1;
-                            $frow['list_id']='payment_type';
-                            generate_print_field($frow, $PaymentType);?>" disabled />
+                            <input type="text" class="form-control" name="type_name1" id="type_name1" value="<?php
+                            $list='payment_type';
+                            $option=$PaymentType;
+                            echo getListItemTitle($list, $option);?>" disabled />
                             <input type="hidden" name="type_name" id="type_name" value="<?php echo attr($PaymentType);?>"/>
                         </div>
                         <div class="forms col-xs-3">
                             <label class="control-label" for="adjustment_code"><?php echo xlt('Payment Category'); ?>:</label>
-                            <input type="text" class="form-control" name="adjustment_code1" id="adjustment_code1" value="<?php $frow['data_type']=1;
-                            $frow['list_id']='payment_adjustment_code';
-                            generate_print_field($frow, $AdjustmentCode);?>" disabled />
+                            <input type="text" class="form-control" name="adjustment_code1" id="adjustment_code1" value="<?php
+                            $list='payment_adjustment_code';
+                            $option=$AdjustmentCode;
+                            echo getListItemTitle($list, $option);?>" disabled />
                             <input type="hidden" name="adjustment_code" value="<?php echo attr($AdjustmentCode);?>"/>
                         </div>
                     </div>
@@ -335,7 +348,7 @@ if ($screen=='new_payment' && $payment_id*1>0) {//After saving from the New Paym
                         </div>
                     </div>
                 </fieldset><!--end of fieldset in new_payment.php -->
-<?php
+    <?php
 }//if($screen=='new_payment' && $payment_id*1>0)
 //================================================================================================
 ?>

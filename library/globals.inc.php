@@ -77,6 +77,9 @@
 //   Urdu                           // xl('Urdu')
 //   Vietnamese                     // xl('Vietnamese')
 
+use \OpenEMR\Services\Globals\GlobalsService;
+use \OpenEMR\Events\Globals\GlobalsInitializedEvent;
+
 // OS-dependent stuff.
 if (stristr(PHP_OS, 'WIN')) {
     // MS Windows
@@ -112,10 +115,11 @@ $USER_SPECIFIC_TABS = array('Appearance',
     'Connectors');
 $USER_SPECIFIC_GLOBALS = array('default_top_pane',
     'default_second_tab',
-    'new_tabs_layout',
     'theme_tabs_layout',
     'css_header',
+    'vertical_responsive_menu',
     'menu_styling_vertical',
+    'search_any_patient',
     'default_encounter_view',
     'gbl_pt_list_page_size',
     'gbl_pt_list_new_window',
@@ -124,6 +128,7 @@ $USER_SPECIFIC_GLOBALS = array('default_top_pane',
     'date_display_format',
     'time_display_format',
     'enable_help',
+    'text_templates_enabled',
     'posting_adj_disable',
     'messages_due_date',
     'expand_form',
@@ -186,32 +191,22 @@ $GLOBALS_METADATA = array(
             xl('Default Second Tab')
         ),
 
-        'new_tabs_layout' => array(
-            xl('Layout (need to logout/login after change this setting)'),
-            array(
-                '0' => xl('Frame'),
-                '1' => xl('Tabs'),
-            ),
-            '1',
-            xl('Choose the layout (need to logout and then login to see this new setting).')
-        ),
-
         'theme_tabs_layout' => array(
-            xl('Tabs Layout Theme (need to logout/login after change this setting)'),
+            xl('Tabs Layout Theme').'*',
             'tabs_css',
             'tabs_style_full.css',
-            xl('Theme of the tabs layout (need to logout and then login to see this new setting). Note this is only applicable if use the Light or Manila general theme below.')
+            xl('Theme of the tabs layout (need to logout and then login to see this new setting).')
         ),
 
         'css_header' => array(
-            xl('General Theme (need to logout/login after change this setting)'),
+            xl('General Theme') .'*',
             'css',
             'style_light.css',
-            xl('Pick a general theme (need to logout/login after change this setting).')
+            xl('Pick a general theme (need to logout/login after changing this setting).')
         ),
 
         'font-family' => array(
-            xl('Default font (need to logout/login after change this setting)'),
+            xl('Default font') .'*',
             array(
                 '__default__' => 'Use Theme Font',
                 'Arial, Helvetica, sans-serif' => "Arial",
@@ -224,11 +219,11 @@ $GLOBALS_METADATA = array(
                 'lato' => "Lato",
             ),
             '__default__',
-            xl('Select the default font'),
+            xl('Select the default font (need to logout/login after changing this setting).'),
         ),
 
         'font-size' => array(
-            xl('Default font size (need to logout/login after change this setting)'),
+            xl('Default font size').'*',
             array(
                 '__default__' => 'Use Theme Font Size',
                 '10px' => '10px',
@@ -238,17 +233,55 @@ $GLOBALS_METADATA = array(
                 '18px' => '18px',
             ),
             '__default__',
-            xl("Select the default font size"),
+            xl("Select the default font size (need to logout/login after changing this setting)."),
+        ),
+
+        'vertical_responsive_menu' => array(
+            xl('Responsive Vertical Menu Style for Tabs')  .'*' ,
+            array(
+                '736' => xl('iPhone 6/7/8 Plus') . " -  736 X 414" . xl('px'),
+                '740' => xl('Galaxy S9/S9 Plus') . " -  740 X 360" . xl('px'),
+                '812' => xl('iPhone X/XS') . " -  812 X 375" . xl('px'),
+                '896' => xl('iPhone XR/XS Max') . " -  896 X 414" . xl('px'),
+                '1024' => xl('iPad/iPad Mini, XGA') . " -  1024 X 768" . xl('px'),
+                '1112' => xl('iPad Pro 10.5 inches') . " -  1112 X 834" . xl('px'),
+                '1280' => xl('Kindle Fire HDX, Laptop MDPI, WXGA') . " -  1280 X 800" . xl('px'),
+                '1336' => xl('iPad Pro 12.5 inches') . " -  1336 X 1024" . xl('px'),
+                '1366' => xl('HD') . " -  1366 X 768" . xl('px'),
+                '1440' => xl('Laptop HiDPI, WXGA+') . " -  1440 X 900" . xl('px'),
+                '1600' => xl('HD+') . " -  1600 X 900" . xl('px'),
+                '1680' => xl('WSXGA+') . " -  1680 X 1050" . xl('px'),
+                '1920' => xl('FHD, WUXGA') . " -  1920 X 1080, 1920 X 1200" . xl('px'),
+                '2048' => xl('QWXGA') . " -  2048 X 1152" . xl('px'),
+                '2560' => xl('QHD') . " -  2560 X 1440" . xl('px'),
+                '3840' => xl('4K UHD') . " -  3840 X 2160" . xl('px'),
+
+            ),
+
+            '1024', //default iPad/iPad mini
+            xl('Selecting the width for responsive vertical style menus in tab based layout (need to logout/login after changing this setting)')
         ),
 
         'menu_styling_vertical' => array(
-            xl('Vertical Menu Style'),
+            xl('Vertical Menu Style for Frames'),
             array(
                 '0' => xl('Tree'),
                 '1' => xl('Sliding'),
             ),
             '1',
-            xl('Vertical Menu Style')
+            xl('Vertical Menu Style for frame based layouts')
+        ),
+
+        'search_any_patient' => array(
+            xl('Search Patient By Any Demographics'),
+            array(
+                'dual' => xl('Dual'),
+                'comprehensive' => xl('Comprehensive'),
+                'fixed' => xl('Fixed'),
+                'none' => xl('None'),
+            ),
+            'dual', // default
+            xl('Search Patient By Any Demographics, Dual additionally lets direct access to Patient Finder, Comprehensive has collapsed input box, Fixed is similar to Dual with fixed size, None is do not show')
         ),
 
         'default_encounter_view' => array(
@@ -262,10 +295,10 @@ $GLOBALS_METADATA = array(
         ),
 
         'gbl_nav_area_width' => array(
-            xl('Navigation Area Width'),
+            xl('Navigation Area Width for Frames'),
             'num',
             '175',
-            xl('Width in pixels of the left navigation frame.')
+            xl('Width in pixels of the left navigation frame in frame based layout.')
         ),
 
         'openemr_name' => array(
@@ -502,6 +535,17 @@ $GLOBALS_METADATA = array(
             'bool',                           // data type
             '0',                              // default = false
             xl('Show Mini Logo 2')
+        ),
+
+        'prevent_browser_refresh' => array(
+            xl('Prevent Web Browser Refresh').'*',
+            array(
+                '0' => xl('Do not warn or prevent web browser refresh'),
+                '1' => xl('Warn, but do not prevent web browser refresh'),
+                '2' => xl('Warn and prevent web browser refresh')
+            ),
+            '2',                              // default = true
+            xl('Recommended setting is warn and prevent web browser refresh. Only use other settings if needed and use at own risk.')
         ),
 
     ),
@@ -775,6 +819,13 @@ $GLOBALS_METADATA = array(
             xl('Removes support for prescriptions')
         ),
 
+        'text_templates_enabled' => array(
+            xl('Enable Text Templates in Encounter Forms'),
+            'bool',                           // data type
+            '0',                              // default = false
+            xl('Allow Double Click to select Nation Note text template from any encounter form text area')
+        ),
+
         'omit_employers' => array(
             xl('Omit Employers'),
             'bool',                           // data type
@@ -912,7 +963,7 @@ $GLOBALS_METADATA = array(
             xl('Enable Encryption of Items Stored on Drive'),
             'bool',                           // data type
             '1',                              // default = true
-            xl('This will enable enable encryption of items that are stored on the drive.')
+            xl('This will enable encryption of items that are stored on the drive.')
         ),
 
         'hide_document_encryption' => array(
@@ -1348,12 +1399,27 @@ $GLOBALS_METADATA = array(
             '',
             xl('Text for fifth account message.')
         ),
+
         'save_codes_history' => array(
             xl('Save codes history'),
             'bool',                           // data type
             '1',                              // default
             xl('Save codes history')
         ),
+
+        'update_mbi' => array(
+            xl('Update policy number from ERA'),
+            'bool',                           // data type
+            '0',                              // default
+            xl('Update policy number from ERA')
+        ),
+
+        'enable_percent_pricing' => array(
+            xl('Enable percent-based price levels'),
+            'bool',                           // data type
+            '0',                              // default
+            xl('Enable percent-based price levels')
+        )
     ),
 
     // E-Sign Tab
@@ -1863,6 +1929,13 @@ $GLOBALS_METADATA = array(
             'num',                            // data type
             '0',                              // default
             xl('Period in days where a user may login with an expired password.')
+        ),
+
+        'password_max_failed_logins' => array(
+            xl('Maximum Failed Login Attempts'),
+            'num',                            // data type
+            '0',                              // default
+            xl('Maximum Failed Login Attempts (0 for no maximum).')
         ),
 
         'is_client_ssl_enabled' => array(
@@ -2545,6 +2618,13 @@ $GLOBALS_METADATA = array(
             '/mnt/scan_docs',                 // default
             xl('Location where scans are stored.')
         ),
+
+        'unique_installation_id' => array(
+            xl('Unique Installation ID'),
+            'if_empty_create_random_uuid',    // data type
+            '',                 // default
+            xl('Unique installation ID. Creates a random UUID if empty.')
+        ),
     ),
 
     // Portal Tab
@@ -2597,7 +2677,7 @@ $GLOBALS_METADATA = array(
             xl('Allow Onsite Online Secure Chat'),
             'bool',                           // data type
             '1',
-            xl('Allow 2 Onsite Patient to use Secure Chat Application.')
+            xl('Allow Onsite Patient to use Secure Chat Application.')
         ),
 
         'portal_two_ledger' => array(
@@ -2709,9 +2789,9 @@ $GLOBALS_METADATA = array(
         'fhir_enable' => array(
             xl('Enable FHIR Provider Client Service'),
             array(
-                0 => xl('Off: No Service.'),
-                1 => xl('On: HAPI FHIR.'),
-                2 => xl('On: Smart on FHIR.'),
+                0 => xl('Disabled'),
+                1 => xl('HAPI FHIR'),
+                2 => xl('Smart on FHIR'),
             ),
             '0',
             xl('Enable FHIR Provider Client Service')
@@ -2767,7 +2847,7 @@ $GLOBALS_METADATA = array(
             xl('Gateway API Login Auth Name or Secret'),
             'encrypted',
             '',
-            xl('The Auth Name or API key for selected account.Auth Name for Authorize.Net and API Secret for Stripe')
+            xl('The Auth Name or API key for selected account. Auth Name for Authorize.Net and API Secret for Stripe.')
         ),
 
         'gateway_transaction_key' => array(
@@ -3518,3 +3598,9 @@ $GLOBALS_METADATA = array(
 
     ),
 );
+
+if (!$skipGlobalEvent) {
+    $globalsInitEvent = new GlobalsInitializedEvent(new GlobalsService($GLOBALS_METADATA, $USER_SPECIFIC_GLOBALS, $USER_SPECIFIC_TABS));
+    $globalsInitEvent = $GLOBALS["kernel"]->getEventDispatcher()->dispatch(GlobalsInitializedEvent::EVENT_HANDLE, $globalsInitEvent, 10);
+    $globalsService = $globalsInitEvent->getGlobalsService()->save();
+}

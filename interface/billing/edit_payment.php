@@ -10,20 +10,18 @@
  * @author    Paul Simon K <paul@zhservices.com>
  * @author    Stephen Waite <stephen.waite@cmsvt.com>
  * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) Z&H Consultancy Services Private Limited <sam@zhservices.com>
- * @copyright Copyright (C) 2018 Stephen Waite <stephen.waite@cmsvt.com>
+ * @copyright Copyright (c) 2010 Z&H Consultancy Services Private Limited <sam@zhservices.com>
+ * @copyright Copyright (C) 2018-2019 Stephen Waite <stephen.waite@cmsvt.com>
  * @copyright Copyright (c) 2019 Brady Miller <brady.g.miller@gmail.com>
  * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
 
 require_once("../globals.php");
-require_once("$srcdir/invoice_summary.inc.php");
 require_once("../../library/acl.inc");
 require_once("$srcdir/auth.inc");
 require_once("../../custom/code_types.inc.php");
 require_once("$srcdir/patient.inc");
-require_once("$srcdir/billrep.inc");
 require_once("$srcdir/options.inc.php");
 require_once("$srcdir/payment.inc.php");
 
@@ -630,7 +628,7 @@ $ResultSearchSub = sqlStatement("SELECT  distinct encounter,code_type,code,modif
     }
     //========================================================================================
 
-    $(document).ready(function() {
+    $(function() {
        $('.datepicker').datetimepicker({
             <?php $datetimepicker_timepicker = false; ?>
             <?php $datetimepicker_showseconds = false; ?>
@@ -719,7 +717,7 @@ fieldset {
     <div class="container">
     <?php
     if ($_REQUEST['ParentPage']=='new_payment') {
-    ?>
+        ?>
     <div class="row">
         <div class="page-header">
             <h2><?php echo xlt('Payments'); ?></h2>
@@ -748,7 +746,7 @@ fieldset {
             </div>
         </nav>
     </div>
-    <?php
+        <?php
     }
     ?>
     <div class="row">
@@ -764,15 +762,15 @@ fieldset {
             <?php
             if ($payment_id*1>0) { ?>
             <fieldset>
-            <?php
+                <?php
                 require_once("payment_master.inc.php");  //Check/cash details are entered here.
-            ?>
-            <?php
+                ?>
+                <?php
             }//End of if($payment_id*1>0)
             ?>
             <?php
             if ($payment_id*1>0) {//Distribution rows already in the database are displayed.
-            ?>
+                ?>
                 <?php //
                     $resCount = sqlStatement("SELECT distinct encounter,code_type,code,modifier from ar_activity where  session_id =?", [$payment_id]);
                     $TotalRows=sqlNumRows($resCount);
@@ -819,14 +817,17 @@ fieldset {
                         if (sqlNumRows($ResultSearch)>0) {
                             if ($CountPatient==1) {
                                 $Table='yes';
-                    ?>
+                                ?>
                     <input id="HiddenRemainderTd<?php echo attr($CountIndex); ?>" name="HiddenRemainderTd<?php echo attr($CountIndex); ?>" type="hidden" value="<?php echo attr(round($RemainderJS, 2)); ?>">
+                <br>
+                <br>
+                <div class="col-xs-12">
                 <div class = "table-responsive">
                 <table class="table-condensed" id="TableDistributePortion" >
                 <thead bgcolor="#DDDDDD" class="text">
                     <td class="left top" >&nbsp;</td>
                     <td class="left top" ><?php echo xlt('Patient Name'); ?></td>
-                    <td class="left top" ><?php echo xlt('Post For'); ?></td>
+                    <td class="left top" style="width:75px"><?php echo xlt('Post For'); ?></td>
                     <td class="left top" ><?php echo xlt('Service Date'); ?></td>
                     <td class="left top" ><?php echo xlt('Encounter'); ?></td>
                     <td class="left top" ><?php echo xlt('Service Code'); ?></td>
@@ -842,7 +843,7 @@ fieldset {
                     <td class="left top" ><?php echo xlt('Resn'); ?></td>
                     <td class="left top right" ><?php echo xlt('Follow Up Reason'); ?></td>
                 </thead>
-                <?php
+                                <?php
                             }
                             while ($RowSearch = sqlFetchArray($ResultSearch)) {
                                 $CountIndex++;
@@ -1023,7 +1024,7 @@ fieldset {
                                 $deductibletot=$deductibletot+$DeductibleDB;
                                 $takebacktot=$takebacktot+$TakebackDB;
                                 $allowedtot=$allowedtot+$AllowedDB;
-                            ?>
+                                ?>
                             <tr bgcolor='<?php echo attr($bgcolor); ?>' class="text" id="trCharges<?php echo attr($CountIndex); ?>">
                                 <td align="left" class="<?php echo attr($StringClass); ?>">
                                     <a href="#" onclick="javascript:return DeletePaymentDistribution(<?php echo attr_js($payment_id.'_'.$PId.'_'.$Encounter.'_'.$Code.'_'.$Modifier.'_'.$Codetype); ?>);"><img border="0" src="../pic/Delete.gif"></a>
@@ -1046,8 +1047,8 @@ fieldset {
                                 <td class="<?php echo attr($StringClass); ?> right"><input id="FollowUpReason<?php echo attr($CountIndex); ?>" name="FollowUpReason<?php echo attr($CountIndex); ?>" onkeydown="PreventIt(event)" style="width:110px;font-size:12px" type="text" value="<?php echo attr($FollowUpReasonDB); ?>"></td>
                             </tr><?php
                             }//End of while ($RowSearch = sqlFetchArray($ResultSearch))
-                        ?>
-                        <?php
+                            ?>
+                            <?php
                         }//End of if(sqlNumRows($ResultSearch)>0)
                     } while ($RowSearchSub = sqlFetchArray($ResultSearchSub));
                     if ($Table=='yes') {
@@ -1069,17 +1070,21 @@ fieldset {
                     <?php
                     echo '<br/>';
                 }//End of if($RowSearchSub = sqlFetchArray($ResultSearchSub))
-                    ?>
+                ?>
                 </div>
+                </div>
+                <div class="col-sm-12">
                     <?php
                         require_once("payment_pat_sel.inc.php"); //Patient ajax section and listing of charges.
                     ?>
-            <?php
+                 </div>
+                <?php
             }//End of if($payment_id*1>0)
             ?>
             <?php //can change position of buttons by creating a class 'position-override' and adding rule text-align:center or right as the case may be in individual stylesheets ?>
             <div class="form-group clearfix">
                 <div class="col-sm-12 text-left position-override">
+                <br>
                     <div class="btn-group" role="group">
                         <a class="btn btn-default btn-save" href="#" onclick="javascript:return ModifyPayments();"><span><?php echo xlt('Modify Payments');?></span></a>
                         <a class="btn btn-default btn-save" href="#" onclick="javascript:return FinishPayments();"><span><?php echo xlt('Finish Payments');?></span></a>
@@ -1104,4 +1109,14 @@ fieldset {
     </div>
     </div><!-- End of container div-->
 </body>
+<script>
+     function ResetForm()
+    {//Resets form used in the 'Cancel Changes' button in the master screen.
+     document.forms[0].reset();
+     document.getElementById('TdUnappliedAmount').innerHTML='0.00';
+     document.getElementById('div_insurance_or_patient').innerHTML='&nbsp;';
+     CheckVisible('yes');//Payment Method is made 'Check Payment' and the Check box is made visible.
+     PayingEntityAction();//Paying Entity is made 'insurance' and Payment Category is 'Insurance Payment'
+    }                                                                
+</script>
 </html>

@@ -93,10 +93,10 @@ assets:
         basePath: %webroot%/library/js/
         script: common.js
     textformat:
-            basePath: %webroot%/library/
-            script: textformat.js
-            autoload: true
-            allowNoLoad: true
+        basePath: %webroot%/library/
+        script: textformat.js
+        autoload: true
+        allowNoLoad: true
     dialog:
         basePath: %webroot%/library/
         script: dialog.js
@@ -168,5 +168,13 @@ assets:
     userdebug:
         basePath: %webroot%/library/js/
         script: userDebug.js
+        autoload: true
+        allowNoLoad: true
+    i18next:
+        basePath: %assets_static_relative%/i18next/dist/umd/
+        script: i18next.min.js
+    utility:
+        basePath: %webroot%/library/js/
+        script: utility.js
         autoload: true
         allowNoLoad: true

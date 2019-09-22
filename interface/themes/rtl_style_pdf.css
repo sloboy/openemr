@@ -320,9 +320,6 @@ a:hover {
 #pnotes table {
   border-collapse: collapse; }
 
-#pnotes .noterow {
-  cursor: pointer; }
-
 #pnotes .noterow td {
   border-bottom: 1px dashed black;
   vertical-align: top;
@@ -579,7 +576,7 @@ a:hover {
  * CSS BUTTONS
 */
 .css_button_small {
-  background: transparent url("../../images/bg_button_a_small.gif") no-repeat scroll top right;
+  background: transparent url("../../public/images/bg_button_a_small.gif") no-repeat scroll top right;
   color: #444;
   display: block;
   float: left;
@@ -591,13 +588,13 @@ a:hover {
   text-decoration: none; }
 
 .css_button_small span {
-  background: transparent url("../../images/bg_button_span_small.gif") no-repeat;
+  background: transparent url("../../public/images/bg_button_span_small.gif") no-repeat;
   display: block;
   line-height: 20px;
   padding: 0px 0px 0px 10px; }
 
 .css_button {
-  background: transparent url("../../images/bg_button_a.gif") no-repeat scroll top right;
+  background: transparent url("../../public/images/bg_button_a.gif") no-repeat scroll top right;
   color: #444;
   display: block;
   float: left;
@@ -609,7 +606,7 @@ a:hover {
   text-decoration: none; }
 
 .css_button span {
-  background: transparent url("../../images/bg_button_span.gif") no-repeat;
+  background: transparent url("../../public/images/bg_button_span.gif") no-repeat;
   display: block;
   line-height: 14px;
   padding: 5px 0 5px 10px; }
@@ -1150,8 +1147,14 @@ body {
 .oe-pull-toward {
     float:right !important;
 }
+.oe-pull-toward-unimportant {
+    float:right;
+}
 .oe-pull-away {
     float:left !important;
+}
+.oe-pull-away-unimportant {
+    float:left;
 }
 .oe-margin-toward {
     margin-right:30px;
@@ -1470,27 +1473,6 @@ div.tab table td {
     float: none !important;
 }
 
-
-/* /interface/main/main_title.php */
-table#main-title tr td:nth-child(1){
-    text-align: left !important;
-}
-table#main-title tr td:nth-child(2){
-    text-align: center !important;
-}
-table#main-title tr td:nth-child(2) div, table#main-title tr td:nth-child(3) div{
-    float: none !important;
-}
-table#main-title tr td:nth-child(3){
-    text-align: center !important;
-}
-table#main-title tr td:nth-child(4){
-    text-align: right !important;
-}
-table#main-title tr td:nth-child(4) table{
-    float: left;
-}
-
 /* /interface/patient_file/summary/demographics.php */
 .demographics-box{
     position: relative
@@ -1540,12 +1522,12 @@ body>.nav{
 }
 #dateNav>a:nth-child(2){
 
-    background-image: url(../main/calendar/modules/PostCalendar/pntemplates/default/images/rightbtn.gif);
+    background-image: url(../../public/images/rightbtn.gif);
     margin-right: 10px;
 }
 #dateNav>a:nth-child(3){
 
-    background-image: url(../main/calendar/modules/PostCalendar/pntemplates/default/images/leftbtn.gif);
+    background-image: url(../../public/images/leftbtn.gif);
 
 }
 

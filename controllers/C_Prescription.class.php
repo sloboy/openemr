@@ -14,10 +14,10 @@
  */
 
 
-require_once($GLOBALS['fileroot'] . "/library/classes/Prescription.class.php");
 require_once($GLOBALS['fileroot'] . "/library/registry.inc");
 require_once($GLOBALS['fileroot'] . "/library/amc.php");
 
+use OpenEMR\Common\Csrf\CsrfUtils;
 use OpenEMR\Common\Http\oeHttp;
 use PHPMailer\PHPMailer\PHPMailer;
 
@@ -44,7 +44,7 @@ class C_Prescription extends Controller
         $this->RxList = new RxList();
 
         // Assign the CSRF_TOKEN_FORM
-        $this->assign("CSRF_TOKEN_FORM", collectCsrfToken());
+        $this->assign("CSRF_TOKEN_FORM", CsrfUtils::collectCsrfToken());
 
         if ($GLOBALS['inhouse_pharmacy']) {
             // Make an array of drug IDs and selectors for the template.
@@ -160,7 +160,7 @@ class C_Prescription extends Controller
                     // (array_filter removes empty items)
                     $rxcui_list = implode("+", array_filter($nameList));
                     // Unable to urlencode the $rxcui, since this breaks the + items on call to rxnav.nlm.nih.gov; so need to include it in the path
-                    $response = oeHttp::bodyFormat('body')->get('https://rxnav.nlm.nih.gov/REST/interaction/list.json?rxcuis=' . $rxcui_list);
+                    $response = oeHttp::get('https://rxnav.nlm.nih.gov/REST/interaction/list.json?rxcuis=' . $rxcui_list);
                     $data = $response->body();
                     $json = json_decode($data, true);
                     if (!empty($json['fullInteractionTypeGroup'][0]['fullInteractionType'])) {
@@ -549,7 +549,7 @@ class C_Prescription extends Controller
     function multiprint_footer(& $pdf)
     {
         if ($this->pconfig['use_signature'] && ( $this->is_faxing || $this->is_print_to_fax )) {
-            $sigfile = str_replace('{userid}', $_SESSION{"authUser"}, $this->pconfig['signature']);
+            $sigfile = str_replace('{userid}', $_SESSION["authUser"], $this->pconfig['signature']);
             if (file_exists($sigfile)) {
                 $pdf->ezText(xl('Signature') . ": ", 12);
                 // $pdf->ezImage($sigfile, "", "", "none", "left");

@@ -18,7 +18,9 @@ require_once("$srcdir/patientvalidation.inc.php");
 require_once("$srcdir/pid.inc");
 require_once("$srcdir/patient.inc");
 
+use OpenEMR\Common\Csrf\CsrfUtils;
 use OpenEMR\Core\Header;
+use OpenEMR\Events\PatientDemographics\UpdateEvent;
 
 // Session pid must be right or bad things can happen when demographics are saved!
 //
@@ -32,7 +34,12 @@ $result2 = getEmployerData($pid);
 
  // Check authorization.
 if ($pid) {
-    if (!acl_check('patients', 'demo', '', 'write')) {
+    // Create and fire the patient demographics update event
+    $updateEvent = new UpdateEvent($pid);
+    $updateEvent = $GLOBALS["kernel"]->getEventDispatcher()->dispatch(UpdateEvent::EVENT_HANDLE, $updateEvent, 10);
+
+    if (!$updateEvent->authorized() ||
+        !acl_check('patients', 'demo', '', 'write')) {
         die(xlt('Updating demographics is not authorized.'));
     }
 
@@ -76,7 +83,7 @@ $fres = sqlStatement("SELECT * FROM layout_options " .
     }
 </style>
 
-<?php include_once("{$GLOBALS['srcdir']}/options.js.php"); ?>
+<?php include_once($GLOBALS['srcdir'] . "/options.js.php"); ?>
 
 <script type="text/javascript">
 
@@ -400,7 +407,7 @@ function policykeyup(e) {
 }
 
 // Added 06/2009 by BM to make compatible with list_options table and functions - using jquery
-$(document).ready(function() {
+$(function() {
 
     <?php for ($i=1; $i<=3; $i++) { ?>
   $("#form_i<?php echo attr($i); ?>subscriber_relationship").change(function() { auto_populate_employer_address<?php echo attr($i); ?>(); });
@@ -420,7 +427,7 @@ $constraints = LBF_Validation::generate_validate_constraints("DEM");
 <body class="body_top">
 
 <form action='demographics_save.php' name='demographics_form' id="DEM" method='post' onsubmit="submitme(<?php echo $GLOBALS['new_validate'] ? 1 : 0;?>,event,'DEM',constraints)">
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+<input type="hidden" name="csrf_token_form" value="<?php echo attr(CsrfUtils::collectCsrfToken()); ?>" />
 <input type='hidden' name='mode' value='save' />
 <input type='hidden' name='db_id' value="<?php echo attr($result['id']); ?>" />
 
@@ -460,8 +467,7 @@ function end_row()
     global $cell_count, $CPR;
     end_cell();
     if ($cell_count > 0) {
-        for (; $cell_count < $CPR;
-        ++$cell_count) {
+        for (; $cell_count < $CPR; ++$cell_count) {
             echo "<td></td>";
         }
 
@@ -536,7 +542,7 @@ echo xlt($CapInstype); ?></a></li><?php
     <?php
     for ($i=1; $i<=3; $i++) {
         $result3 = $insurance_info[$i];
-    ?>
+        ?>
 
      <div class="tab <?php echo $i == 1 ? 'current': '' ?>" style='height:auto;width:auto'>     <!---display icky, fix to auto-->
 
@@ -558,7 +564,7 @@ echo xlt($CapInstype); ?></a></li><?php
                 <?php
                 foreach ($insurancei as $iid => $iname) {
                     echo "<option value='" . attr($iid) . "'";
-                    if (strtolower($iid) == strtolower($result3{"provider"})) {
+                    if (strtolower($iid) == strtolower($result3["provider"])) {
                         echo " selected";
                     }
 
@@ -576,7 +582,7 @@ echo xlt($CapInstype); ?></a></li><?php
              </td>
              <td class='required'>:</td>
              <td>
-              <input type='entry' class='form-control' size='20' name='i<?php echo attr($i); ?>plan_name' value="<?php echo attr($result3{"plan_name"}); ?>"
+              <input type='entry' class='form-control' size='20' name='i<?php echo attr($i); ?>plan_name' value="<?php echo attr($result3["plan_name"]); ?>"
                onchange="capitalizeMe(this);" />&nbsp;&nbsp;
              </td>
             </tr>
@@ -596,46 +602,46 @@ echo xlt($CapInstype); ?></a></li><?php
             <tr>
              <td><label class=required><?php echo xlt('Policy Number'); ?></label></td>
              <td class='required'>:</td>
-             <td><input type='entry' class='form-control' size='16' name='i<?php echo attr($i); ?>policy_number' value="<?php echo attr($result3{"policy_number"}); ?>"
+             <td><input type='entry' class='form-control' size='16' name='i<?php echo attr($i); ?>policy_number' value="<?php echo attr($result3["policy_number"]); ?>"
               onkeyup='policykeyup(this)'></td>
             </tr>
 
             <tr>
              <td><label class=required><?php echo xlt('Group Number'); ?></label></td>
              <td class='required'>:</td>
-             <td><input type=entry class='form-control' size=16 name=i<?php echo attr($i); ?>group_number value="<?php echo attr($result3{"group_number"}); ?>" onkeyup='policykeyup(this)'></td>
+             <td><input type=entry class='form-control' size=16 name=i<?php echo attr($i); ?>group_number value="<?php echo attr($result3["group_number"]); ?>" onkeyup='policykeyup(this)'></td>
             </tr>
 
             <tr<?php if ($GLOBALS['omit_employers']) {
                 echo " style='display:none'";
-} ?>>
+               } ?>>
              <td class='required'><?php echo xlt('Subscriber Employer (SE)'); ?><br><label style='font-weight:normal'>
               (<?php echo xlt('if unemployed enter Student'); ?>,<br><?php echo xlt('PT Student, or leave blank'); ?>) </label></td>
               <td class='required'>:</td>
              <td><input type=entry class='form-control' size=25 name=i<?php echo attr($i); ?>subscriber_employer
-              value="<?php echo attr($result3{"subscriber_employer"}); ?>"
+              value="<?php echo attr($result3["subscriber_employer"]); ?>"
                onchange="capitalizeMe(this);" /></td>
             </tr>
 
             <tr<?php if ($GLOBALS['omit_employers']) {
                 echo " style='display:none'";
-} ?>>
+               } ?>>
              <td><label class=required><?php echo xlt('SE Address'); ?></label></td>
              <td class='required'>:</td>
              <td><input type=entry class='form-control' size=25 name=i<?php echo attr($i); ?>subscriber_employer_street
-              value="<?php echo attr($result3{"subscriber_employer_street"}); ?>"
+              value="<?php echo attr($result3["subscriber_employer_street"]); ?>"
                onchange="capitalizeMe(this);" /></td>
             </tr>
 
             <tr<?php if ($GLOBALS['omit_employers']) {
                 echo " style='display:none'";
-} ?>>
+               } ?>>
              <td colspan="3">
               <table>
                <tr>
                 <td><label class=required><?php echo xlt('SE City'); ?>: </label></td>
                 <td><input type=entry class='form-control' size=15 name=i<?php echo attr($i); ?>subscriber_employer_city
-               value="<?php echo attr($result3{"subscriber_employer_city"}); ?>"
+               value="<?php echo attr($result3["subscriber_employer_city"]); ?>"
                 onchange="capitalizeMe(this);" /></td>
                 <td><label class=required><?php echo ($GLOBALS['phone_country_code'] == '1') ? xlt('SE State') : xlt('SE Locality') ?>: </label></td>
             <td>
@@ -647,7 +653,7 @@ echo xlt($CapInstype); ?></a></li><?php
                </tr>
                <tr>
                 <td><label class=required><?php echo ($GLOBALS['phone_country_code'] == '1') ? xlt('SE Zip Code') : xlt('SE Postal Code') ?>: </label></td>
-                <td><input type=entry class='form-control' size=15 name=i<?php echo attr($i); ?>subscriber_employer_postal_code value="<?php echo attr($result3{"subscriber_employer_postal_code"}); ?>"></td>
+                <td><input type=entry class='form-control' size=15 name=i<?php echo attr($i); ?>subscriber_employer_postal_code value="<?php echo attr($result3["subscriber_employer_postal_code"]); ?>"></td>
                 <td><label class=required><?php echo xlt('SE Country'); ?>: </label></td>
             <td>
                     <?php
@@ -671,7 +677,7 @@ echo xlt($CapInstype); ?></a></li><?php
                 <td colspan=3><?php
                  // Modified 6/2009 by BM to use list_options and function
                  generate_form_field(array('data_type'=>1,'field_id'=>('i'.$i.'subscriber_relationship'),'list_id'=>'sub_relation','empty_title'=>' '), $result3['subscriber_relationship']);
-                    ?>
+                ?>
 
                 <a href="javascript:popUp('browse.php?browsenum=<?php echo attr_url($i); ?>')" class=text>(<?php echo xlt('Browse'); ?>)</a></td>
                 <td></td><td></td><td></td><td></td>
@@ -679,9 +685,9 @@ echo xlt($CapInstype); ?></a></li><?php
                       <tr>
                 <td width=120><label class=required><?php echo xlt('Subscriber'); ?> </label></td>
                 <td class=required>:</td>
-                <td colspan=3><input type=entry class='form-control'size=10 name=i<?php echo attr($i); ?>subscriber_fname   value="<?php echo attr($result3{"subscriber_fname"}); ?>" onchange="capitalizeMe(this);" />
-                <input type=entry class='form-control' size=3 name=i<?php echo attr($i); ?>subscriber_mname value="<?php echo attr($result3{"subscriber_mname"}); ?>" onchange="capitalizeMe(this);" />
-                <input type=entry class='form-control' size=10 name=i<?php echo attr($i); ?>subscriber_lname value="<?php echo attr($result3{"subscriber_lname"}); ?>" onchange="capitalizeMe(this);" /></td>
+                <td colspan=3><input type=entry class='form-control'size=10 name=i<?php echo attr($i); ?>subscriber_fname   value="<?php echo attr($result3["subscriber_fname"]); ?>" onchange="capitalizeMe(this);" />
+                <input type=entry class='form-control' size=3 name=i<?php echo attr($i); ?>subscriber_mname value="<?php echo attr($result3["subscriber_mname"]); ?>" onchange="capitalizeMe(this);" />
+                <input type=entry class='form-control' size=10 name=i<?php echo attr($i); ?>subscriber_lname value="<?php echo attr($result3["subscriber_lname"]); ?>" onchange="capitalizeMe(this);" /></td>
                 <td></td><td></td><td></td><td></td>
             </tr>
             <tr>
@@ -693,35 +699,35 @@ echo xlt($CapInstype); ?></a></li><?php
                 <td><?php
                  // Modified 6/2009 by BM to use list_options and function
                  generate_form_field(array('data_type'=>1,'field_id'=>('i'.$i.'subscriber_sex'),'list_id'=>'sex'), $result3['subscriber_sex']);
-                    ?>
+                ?>
                 </td>
                 <td></td><td></td> <td></td><td></td>
             </tr>
             <tr>
                 <td class=leftborder><label class=bold><?php echo xlt('S.S.'); ?> </label></td>
                 <td class=required>:</td>
-                <td><input type=entry class='form-control' size=11 name=i<?php echo attr($i); ?>subscriber_ss value="<?php echo attr(trim($result3{"subscriber_ss"})); ?>"></td>
+                <td><input type=entry class='form-control' size=11 name=i<?php echo attr($i); ?>subscriber_ss value="<?php echo attr(trim($result3["subscriber_ss"])); ?>"></td>
             </tr>
 
             <tr>
                 <td><label class=required><?php echo xlt('Subscriber Address'); ?> </label></td>
                 <td class=required>:</td>
-                <td><input type=entry class='form-control' size=20 name=i<?php echo attr($i); ?>subscriber_street value="<?php echo attr($result3{"subscriber_street"}); ?>" onchange="capitalizeMe(this);" /></td>
+                <td><input type=entry class='form-control' size=20 name=i<?php echo attr($i); ?>subscriber_street value="<?php echo attr($result3["subscriber_street"]); ?>" onchange="capitalizeMe(this);" /></td>
 
                 <td><label class=required><?php echo ($GLOBALS['phone_country_code'] == '1') ? xlt('State') : xlt('Locality') ?>: </label></td>
                 <td>
                     <?php
                     // Modified 7/2009 by BM to incorporate data types
                     generate_form_field(array('data_type'=>$GLOBALS['state_data_type'],'field_id'=>('i'.$i.'subscriber_state'),'list_id'=>$GLOBALS['state_list'],'fld_length'=>'15','max_length'=>'63','edit_options'=>'C'), $result3['subscriber_state']);
-                ?>
+                    ?>
                 </td>
             </tr>
             <tr>
                 <td class=leftborder><label class=required><?php echo xlt('City'); ?></label></td>
                 <td class=required>:</td>
-                <td><input type=entry class='form-control' size=11 name=i<?php echo attr($i); ?>subscriber_city value="<?php echo attr($result3{"subscriber_city"}); ?>" onchange="capitalizeMe(this);" /></td><td class=leftborder><label class='required'<?php if ($GLOBALS['omit_employers']) {
+                <td><input type=entry class='form-control' size=11 name=i<?php echo attr($i); ?>subscriber_city value="<?php echo attr($result3["subscriber_city"]); ?>" onchange="capitalizeMe(this);" /></td><td class=leftborder><label class='required'<?php if ($GLOBALS['omit_employers']) {
                     echo " style='display:none'";
-} ?>><?php echo xlt('Country'); ?>: </label></td><td>
+                                                                         } ?>><?php echo xlt('Country'); ?>: </label></td><td>
                     <?php
                     // Modified 7/2009 by BM to incorporate data types
                     generate_form_field(array('data_type'=>$GLOBALS['country_data_type'],'field_id'=>('i'.$i.'subscriber_country'),'list_id'=>$GLOBALS['country_list'],'fld_length'=>'10','max_length'=>'63','edit_options'=>'C'), $result3['subscriber_country']);
@@ -730,7 +736,7 @@ echo xlt($CapInstype); ?></a></li><?php
 </tr>
             <tr>
                 <td><label class=required><?php echo ($GLOBALS['phone_country_code'] == '1') ? xlt('Zip Code') : xlt('Postal Code') ?> </label></td>
-                <td class=required>:</td><td><input type=entry class='form-control' size=10 name=i<?php echo attr($i); ?>subscriber_postal_code value="<?php echo attr($result3{"subscriber_postal_code"}); ?>"></td>
+                <td class=required>:</td><td><input type=entry class='form-control' size=10 name=i<?php echo attr($i); ?>subscriber_postal_code value="<?php echo attr($result3["subscriber_postal_code"]); ?>"></td>
 
                 <td colspan=2>
                 </td><td></td>
@@ -739,7 +745,7 @@ echo xlt($CapInstype); ?></a></li><?php
                 <td><label class=bold><?php echo xlt('Subscriber Phone'); ?></label></td>
                 <td class=required>:</td>
                 <td><input type='text' class='form-control' size='20' name='i<?php echo attr($i); ?>subscriber_phone' value='<?php echo attr($result3["subscriber_phone"]); ?>' onkeyup='phonekeyup(this,mypcc)' /></td>
-                <td colspan=2><label class=bold><?php echo xlt('CoPay'); ?>: <input type=text class='form-control' size="6" name=i<?php echo attr($i); ?>copay value="<?php echo attr($result3{"copay"}); ?>"></label></td>
+                <td colspan=2><label class=bold><?php echo xlt('CoPay'); ?>: <input type=text class='form-control' size="6" name=i<?php echo attr($i); ?>copay value="<?php echo attr($result3["copay"]); ?>"></label></td>
                 <td colspan=2>
                 </td><td></td><td></td>
             </tr>
@@ -748,12 +754,12 @@ echo xlt($CapInstype); ?></a></li><?php
                 <td class=required>:</td>
                 <td colspan=2>
                     <select class='form-control' name=i<?php echo attr($i); ?>accept_assignment>
-                     <option value="TRUE" <?php if (strtoupper($result3{"accept_assignment"}) == "TRUE") {
+                     <option value="TRUE" <?php if (strtoupper($result3["accept_assignment"]) == "TRUE") {
                             echo "selected";
-}?>><?php echo xlt('YES'); ?></option>
-                     <option value="FALSE" <?php if (strtoupper($result3{"accept_assignment"}) == "FALSE") {
+                                          }?>><?php echo xlt('YES'); ?></option>
+                     <option value="FALSE" <?php if (strtoupper($result3["accept_assignment"]) == "FALSE") {
                             echo "selected";
-}?>><?php echo xlt('NO'); ?></option>
+                                           }?>><?php echo xlt('NO'); ?></option>
                     </select>
                 </td>
                 <td></td><td></td>
@@ -765,16 +771,16 @@ echo xlt($CapInstype); ?></a></li><?php
         <td class='bold'>:</td>
         <td colspan='6'>
           <select class='form-control sel2' name=i<?php echo attr($i); ?>policy_type>
-<?php
-foreach ($policy_types as $key => $value) {
-    echo "            <option value ='" . attr($key) . "'";
-    if ($key == $result3['policy_type']) {
-        echo " selected";
-    }
+        <?php
+        foreach ($policy_types as $key => $value) {
+            echo "            <option value ='" . attr($key) . "'";
+            if ($key == $result3['policy_type']) {
+                echo " selected";
+            }
 
-    echo ">" . text($value) . "</option>\n";
-}
-?>
+            echo ">" . text($value) . "</option>\n";
+        }
+        ?>
         </select>
       </td>
     </tr>
@@ -785,7 +791,7 @@ foreach ($policy_types as $key => $value) {
 
       </div>
 
-    <?php
+        <?php
     } //end insurer for loop ?>
 
    </div>
@@ -814,11 +820,11 @@ var skipArray = [
  if (f.form_phone_biz    ) phonekeyup(f.form_phone_biz    ,mypcc);
  if (f.form_phone_cell   ) phonekeyup(f.form_phone_cell   ,mypcc);
 
-<?php if (! $GLOBALS['simplified_demographics']) { ?>
+    <?php if (! $GLOBALS['simplified_demographics']) { ?>
  phonekeyup(f.i1subscriber_phone,mypcc);
  phonekeyup(f.i2subscriber_phone,mypcc);
  phonekeyup(f.i3subscriber_phone,mypcc);
-<?php } ?>
+    <?php } ?>
 
 <?php }?>
 
@@ -847,7 +853,6 @@ $use_validate_js=$GLOBALS['new_validate'];
 
 //This code deals with demographics before save action -
     <?php if (($GLOBALS['gbl_edit_patient_form'] == '1') && (checkIfPatientValidationHookIsActive())) :?>
-
                 //Use the Zend patient validation hook.
                 //TODO - get the edit part of patient validation hook to work smoothly and then
                 //       remove the closeBeforeOpening=1 in the url below.

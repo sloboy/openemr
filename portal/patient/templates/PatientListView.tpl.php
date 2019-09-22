@@ -1,25 +1,13 @@
 <?php
 /**
+ * import_template.php
  *
- * Copyright (C) 2016-2017 Jerry Padgett <sjpadgett@gmail.com>
- *
- * LICENSE: This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Affero General Public License as
- *  published by the Free Software Foundation, either version 3 of the
- *  License, or (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Affero General Public License for more details.
- *
- *  You should have received a copy of the GNU Affero General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * @package OpenEMR
- * @author Jerry Padgett <sjpadgett@gmail.com>
- * @author Terry Hill <teryhill@yahoo.com>
- * @link http://www.open-emr.org
+ * @package   OpenEMR
+ * @link      https://www.open-emr.org
+ * @author    Jerry Padgett <sjpadgett@gmail.com>
+ * @author    Terry Hill <teryhill@yahoo.com>
+ * @copyright Copyright (c) 2016-2017 Jerry Padgett <sjpadgett@gmail.com>
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
     //require_once ("./../verify_session.php");
@@ -47,7 +35,7 @@ if ($this->trow) {
     <?php require($GLOBALS['srcdir'] . '/js/xl/jquery-datetimepicker-2-5-4-alternate.js.php'); ?>
 
     $LAB.script("scripts/app/patientdata.js?v=<?php echo $GLOBALS['v_js_includes']; ?>").wait(function(){
-        $(document).ready(function(){
+        $(function(){
             page.init();
         });
         // hack for browsers or slow sessions which may respond inconsistently with document.ready-second chance at init
@@ -115,21 +103,21 @@ body{
                     </div>
                 </div> -->
                 <div class="form-group inline" id="fnameInputContainer">
-                    <label class="control-label" for="fname"><?php echo xlt('First')?></label>
+                    <label class="control-label" for="fname"><?php echo xlt('First{{Name}}')?></label>
                     <div class="controls inline-inputs">
                         <input type="text" class="form-control" id="fname" required placeholder="<?php echo xla('First Name'); ?>" value="<%= _.escape(item.get('fname') || '') %>">
                         <span class="help-inline"></span>
                     </div>
                 </div>
                 <div class="form-group inline" id="mnameInputContainer">
-                    <label class="control-label" for="mname"><?php echo xlt('Middle')?></label>
+                    <label class="control-label" for="mname"><?php echo xlt('Middle{{Name}}')?></label>
                     <div class="controls inline-inputs">
                         <input type="text" class="form-control" id="mname" placeholder="<?php echo xla('Middle Name'); ?>" value="<%= _.escape(item.get('mname') || '') %>">
                         <span class="help-inline"></span>
                     </div>
                 </div>
                 <div class="form-group inline" id="lnameInputContainer">
-                    <label class="control-label" for="lname"><?php echo xlt('Last')?></label>
+                    <label class="control-label" for="lname"><?php echo xlt('Last{{Name}}')?></label>
                     <div class="controls inline-inputs">
                         <input type="text" class="form-control" id="lname" required placeholder="<?php echo xla('Last Name'); ?>" value="<%= _.escape(item.get('lname') || '') %>">
                         <span class="help-inline"></span>
@@ -500,7 +488,7 @@ body{
                     <?php
                       # Generate drop down list for Ethnoracial
                       //echo generate_select_list('ethnoracial', 'ethrace', $row['ethnoracial'], xl('Ethnoracial'), 'Unassigned', "form-control");
-                        ?>
+                    ?>
                         <span class="help-inline"></span>
                     </div>
                 </div> -->

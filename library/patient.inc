@@ -5,7 +5,9 @@
  * @package   OpenEMR
  * @link      http://www.open-emr.org
  * @author    Brady Miller <brady.g.miller@gmail.com>
+ * @author    Sherwin Gaddis <sherwingaddis@gmail.com>
  * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2019 Sherwin Gaddis <brady.g.miller@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
@@ -89,11 +91,9 @@ function getInsuranceProviders()
         for ($iter=0; $row=sqlFetchArray($rez); $iter++) {
             $returnval[$row['id']] = $row['name'];
         }
-    } // Please leave this here. I have a user who wants to see zip codes and PO
-    // box numbers listed along with the insurance company names, as many companies
-    // have different billing addresses for different plans.  -- Rod Roark
-    //
-    else {
+    } else { // Please leave this here. I have a user who wants to see zip codes and PO
+        // box numbers listed along with the insurance company names, as many companies
+        // have different billing addresses for different plans.  -- Rod Roark
         $sql = "select insurance_companies.name, insurance_companies.id, " .
           "addresses.zip, addresses.line1 " .
           "from insurance_companies, addresses " .
@@ -386,9 +386,9 @@ function getCalendarProviderInfo($providerID = "%", $providers_only = true)
     return $returnval;
 }
 
-function getProviderName($providerID)
+function getProviderName($providerID, $provider_only = 'any')
 {
-    $pi = getProviderInfo($providerID, 'any');
+    $pi = getProviderInfo($providerID, $provider_only);
     if (strlen($pi[0]["lname"]) > 0) {
         if (strlen($pi[0]["suffix"]) > 0) {
             $pi[0]["lname"] .= ", ".$pi[0]["suffix"];
@@ -560,11 +560,11 @@ function getPatientLnames($term = "%", $given = "pid, id, lname, fname, mname, p
     }
 
     if (!empty($GLOBALS['pt_restrict_field'])) {
-        if ($_SESSION{"authUser"} != 'admin' || $GLOBALS['pt_restrict_admin']) {
+        if ($_SESSION["authUser"] != 'admin' || $GLOBALS['pt_restrict_admin']) {
             $where .= " AND ( patient_data." . add_escape_custom($GLOBALS['pt_restrict_field']) .
                 " = ( SELECT facility_id FROM users WHERE username = ?) OR patient_data." .
                 add_escape_custom($GLOBALS['pt_restrict_field']) . " = '' ) ";
-            array_push($sqlBindArray, $_SESSION{"authUser"});
+            array_push($sqlBindArray, $_SESSION["authUser"]);
         }
     }
 
@@ -638,11 +638,11 @@ function getPatientId($pid = "%", $given = "pid, id, lname, fname, mname, provid
     $where = "pubpid LIKE ? ";
     array_push($sqlBindArray, $pid."%");
     if (!empty($GLOBALS['pt_restrict_field']) && $GLOBALS['pt_restrict_by_id']) {
-        if ($_SESSION{"authUser"} != 'admin' || $GLOBALS['pt_restrict_admin']) {
+        if ($_SESSION["authUser"] != 'admin' || $GLOBALS['pt_restrict_admin']) {
             $where .= "AND ( patient_data." . add_escape_custom($GLOBALS['pt_restrict_field']) .
                     " = ( SELECT facility_id FROM users WHERE username = ?) OR patient_data." .
                     add_escape_custom($GLOBALS['pt_restrict_field']) . " = '' ) ";
-            array_push($sqlBindArray, $_SESSION{"authUser"});
+            array_push($sqlBindArray, $_SESSION["authUser"]);
         }
     }
 
@@ -854,11 +854,11 @@ function getPatientDOB($DOB = "%", $given = "pid, id, lname, fname, mname", $ord
     $where = "DOB like ? ";
     array_push($sqlBindArray, $DOB."%");
     if (!empty($GLOBALS['pt_restrict_field'])) {
-        if ($_SESSION{"authUser"} != 'admin' || $GLOBALS['pt_restrict_admin']) {
+        if ($_SESSION["authUser"] != 'admin' || $GLOBALS['pt_restrict_admin']) {
             $where .= "AND ( patient_data." . add_escape_custom($GLOBALS['pt_restrict_field']) .
                     " = ( SELECT facility_id FROM users WHERE username = ?) OR patient_data." .
                     add_escape_custom($GLOBALS['pt_restrict_field']) . " = '' ) ";
-            array_push($sqlBindArray, $_SESSION{"authUser"});
+            array_push($sqlBindArray, $_SESSION["authUser"]);
         }
     }
 
@@ -1062,7 +1062,7 @@ function newPatientData(
 
     if (!$db_id) {
       // find the last inserted id for new patient case
-        $db_id = getSqlLastID();
+        $db_id = $id;
     }
 
     $foo = sqlQuery("select pid from patient_data where id=? order by date limit 0,1", array($id));
@@ -1547,20 +1547,19 @@ function getPatientAgeYMD($dob, $date = null)
     //to compensate for 30, 31, 28, 29 days/month
     $mo=$monthnow; //to avoid confusion with later calculation
 
-    if ($mo==05 or $mo==07 or $mo==10 or $mo==12) {  //determined by monthnow-1
-        $nd=30; //nd = number of days in a month, if monthnow is 5, 7, 9, 12 then
-    } // look at April, June, September, November for calculation.  These months only have 30 days.
-    elseif ($mo==03) { // for march, look to the month of February for calculation, check for leap year
+    if ($mo==05 or $mo==07 or $mo==10 or $mo==12) {  // determined by monthnow-1
+        $nd=30; // nd = number of days in a month, if monthnow is 5, 7, 9, 12 then
+    } elseif ($mo==03) { // look at April, June, September, November for calculation.  These months only have 30 days.
+        // for march, look to the month of February for calculation, check for leap year
         $check_leap_Y=$yearnow/4; // To check if this is a leap year.
-        if (is_int($check_leap_Y)) {
+        if (is_int($check_leap_Y)) { // If it true then this is the leap year
             $nd=29;
-        } //If it true then this is the leap year
-        else {
+        } else { // otherwise, it is not a leap year.
             $nd=28;
-        } //otherwise, it is not a leap year.
-    } else {
+        }
+    } else { // other months have 31 days
         $nd=31;
-    } // other months have 31 days
+    }
 
     $bdthisyear=$yearnow.$dobmonth.$dobday; //Date current year's birthday falls on
     if ($datenow < $bdthisyear) { // if patient hasn't had birthday yet this year
@@ -1656,31 +1655,6 @@ function dateToDB($date)
 {
     $date=substr($date, 6, 4)."-".substr($date, 3, 2)."-".substr($date, 0, 2);
     return $date;
-}
-
-
-// ----------------------------------------------------------------------------
-/**
- * DROPDOWN FOR COUNTRIES
- *
- * build a dropdown with all countries from geo_country_reference
- *
- * @param int $selected - id for selected record
- * @param string $name - the name/id for select form
- * @return void - just echo the html encoded string
- */
-function dropdown_countries($selected = 0, $name = 'country_code')
-{
-    $r = sqlStatement("SELECT * FROM geo_country_reference ORDER BY countries_name");
-
-    $string = "<select name='" . attr($name) . "' id='" . attr($name) . "'>";
-    while ($row = sqlFetchArray($r)) {
-        $sufix = ( $selected == $row['countries_id']) ? 'selected="selected"' : '';
-        $string .= "<option value='" . attr($row['countries_id']) . "' $sufix>" . text($row['countries_name']) . "</option>";
-    }
-
-    $string .= '</select>';
-    echo $string;
 }
 
 
@@ -1826,38 +1800,6 @@ function dropdown_insurance($selected = 0, $name = 'iprovider')
     $string .= '</select>';
 
     echo $string;
-}
-
-
-// ----------------------------------------------------------------------------
-/**
- * COUNTRY CODE
- *
- * return the name or the country code, function of arguments
- *
- * @param int $country_code
- * @param string $country_name
- * @return string | int - name or code
- */
-function country_code($country_code = 0, $country_name = '')
-{
-    $strint = '';
-    $sqlBindArray = array();
-    if ($country_code) {
-        $sql = "SELECT countries_name AS res FROM geo_country_reference WHERE countries_id = ?";
-        array_push($sqlBindArray, $country_code);
-    } else {
-        $sql = "SELECT countries_id AS res FROM geo_country_reference WHERE countries_name = ?";
-        array_push($sqlBindArray, $country_name);
-    }
-
-    $db = $GLOBALS['adodb']['db'];
-    $result = $db->Execute($sql, $sqlBindArray);
-    if ($result && !$result->EOF) {
-        $strint = $result->fields['res'];
-    }
-
-    return $strint;
 }
 
 function DBToDate($date)

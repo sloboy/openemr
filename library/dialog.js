@@ -65,7 +65,7 @@ function dlgOpenWindow(url, winname, width, height) {
     }
     top.modaldialog = cascwin(url, winname, width, height,
         "resizable=1,scrollbars=1,location=0,toolbar=0");
-    grabfocus(top);
+
     return false;
 }
 
@@ -146,10 +146,9 @@ function includeScript(url, async, type) {
             }
         }
 
-        throw new Error('<?php echo xlt("Failed to get URL:") ?>' + url);
+        throw new Error("Failed to get URL:" + url);
 
-    }
-    catch (e) {
+    } catch (e) {
         throw e;
     }
 
@@ -174,6 +173,86 @@ function inDom(dependency, type, remove) {
     return false;
 }
 
+// These functions may be called from scripts that may be out of scope with top so...
+// if opener is tab then we need to be in tabs UI scope and while we're at it, let's bring webroot along...
+//
+if (typeof top.webroot_url === "undefined" && opener) {
+    if (typeof opener.top.webroot_url !== "undefined") {
+        top.webroot_url = opener.top.webroot_url;
+    }
+}
+// We'll need these if out of scope
+//
+if (typeof top.set_opener !== "function") {
+    var opener_list = [];
+
+    function set_opener(window, opener) {
+        top.opener_list[window] = opener;
+    }
+
+    function get_opener(window) {
+        return top.opener_list[window];
+    }
+}
+
+// universal alert popup message
+if (typeof alertMsg !== "function") {
+    function alertMsg(message, timer = 5000, type = 'danger', size = '', persist = '') {
+        // example of get php to js variables.
+        let isPromise = top.jsFetchGlobals('alert');
+        isPromise.then(xl => {
+            $('#alert_box').remove();
+            let oHidden = '';
+            oHidden = !persist ? "hidden" : '';
+            let oSize = (size == 'lg') ? 'left:10%;width:80%;' : 'left:25%;width:50%;';
+            let style = "position:fixed;top:25%;" + oSize + " bottom:0;z-index:9999;";
+            $("body").prepend("<div class='container text-center' id='alert_box' style='" + style + "'></div>");
+            let mHtml = '<div id="alertmsg" hidden class="alert alert-' + type + ' alert-dismissable">' +
+                '<button type="button" class="btn btn-link ' + oHidden + '" id="dontShowAgain" data-dismiss="alert">' +
+                xl.alert.gotIt + '&nbsp;<i class="fa fa-thumbs-up"></i></button>' +
+                '<h4 class="alert-heading text-center">' + xl.alert.title + '!</h4><hr>' + '<p style="color:#000;">' + message + '</p>' +
+                '<button type="button" class="pull-right btn btn-link" data-dismiss="alert">' + xl.alert.dismiss + '</button></br></div>';
+            $('#alert_box').append(mHtml);
+            $('#alertmsg').fadeIn(800);
+            $('#alertmsg').on('closed.bs.alert', function () {
+                clearTimeout(AlertMsg);
+                $('#alert_box').remove();
+                return false;
+            });
+            $('#dontShowAgain').on('click', function (e) {
+                persistUserOption(persist, 1);
+            });
+            let AlertMsg = setTimeout(function () {
+                $('#alertmsg').fadeOut(800, function () {
+                    $('#alert_box').remove();
+                });
+            }, timer);
+        }).catch(error => {
+            console.log(error.message)
+        });
+    }
+    const persistUserOption = function (option, value) {
+        return $.ajax({
+            url: top.webroot_url + "/library/ajax/user_settings.php",
+            type: 'post',
+            contentType: 'application/x-www-form-urlencoded',
+            data: {
+                csrf_token_form: top.csrf_token_js,
+                target: option,
+                setting: value
+            },
+            beforeSend: function () {
+                top.restoreSession;
+            },
+            error: function (jqxhr, status, errorThrown) {
+                console.log(errorThrown);
+            }
+        });
+    };
+}
+
+
+
 // Test if supporting dialog callbacks and close dependencies are in scope.
 // This is useful when opening and closing the dialog is in the same scope. Still use include_opener.js
 // in script that will close a dialog that is not in the same scope dlgopen was used
@@ -184,65 +263,38 @@ function inDom(dependency, type, remove) {
 //
 if (typeof dlgclose !== "function") {
     if (!opener) {
-        if (!top.tab_mode && typeof top.get_opener === 'function') {
-            opener = top.get_opener(window.name) ? top.get_opener(window.name) : window;
-        } else {
-            opener = window;
-        }
+        opener = window;
     }
 
-    var dlgclose =
-        function (call, args) {
-            var frameName = window.name;
-            var wframe = opener;
-            if (frameName === '') {
-                // try to find dialog. dialogModal is embedded dialog class
-                // It has to be here somewhere.
-                frameName = $(".dialogModal").attr('id');
+    function dlgclose(call, args) {
+        var frameName = window.name;
+        var wframe = top;
+        if (frameName === '') {
+            // try to find dialog. dialogModal is embedded dialog class
+            // It has to be here somewhere.
+            frameName = $(".dialogModal").attr('id');
+            if (!frameName) {
+                frameName = parent.$(".dialogModal").attr('id');
                 if (!frameName) {
-                    frameName = parent.$(".dialogModal").attr('id');
-                    if (!frameName) {
-                        console.log("Unable to find dialog.");
-                        return false;
-                    }
+                    console.log("Unable to find dialog.");
+                    return false;
                 }
             }
-            if (!top.tab_mode) {
-                for (; wframe.name !== 'RTop' && wframe.name !== 'RBot'; wframe = wframe.parent) {
-                    if (wframe.parent === wframe) {
-                        wframe = window;
-                    }
-                }
-                for (let i = 0; wframe.document.body.localName !== 'body' && i < 4; wframe = wframe[i++]) {
-                    if (i === 3) {
-                        console.log("Opener: unable to find modal's frame");
-                        return false;
-                    }
-                }
-                dialogModal = wframe.$('div#' + frameName);
-                if (dialogModal.length === 0) {
-                    // Never give up...
-                    frameName = $(".dialogModal").attr('id');
-                    dialogModal = wframe.$('div#' + frameName);
-                    console.log("Frame: used local find dialog");
-                }
-            } else {
-                var dialogModal = top.$('div#' + frameName);
-                wframe = top;
-            }
+        }
+        var dialogModal = top.$('div#' + frameName);
 
-            var removeFrame = dialogModal.find("iframe[name='" + frameName + "']");
-            if (removeFrame.length > 0) {
-                removeFrame.remove();
-            }
+        var removeFrame = dialogModal.find("iframe[name='" + frameName + "']");
+        if (removeFrame.length > 0) {
+            removeFrame.remove();
+        }
 
-            if (dialogModal.length > 0) {
-                if (call) {
-                    wframe.setCallBack(call, args); // sets/creates callback function in dialogs scope.
-                }
-                dialogModal.modal('hide');
+        if (dialogModal.length > 0) {
+            if (call) {
+                wframe.setCallBack(call, args); // sets/creates callback function in dialogs scope.
             }
-        };
+            dialogModal.modal('hide');
+        }
+    };
 }
 
 /*
@@ -279,7 +331,6 @@ function dlgopen(url, winname, width, height, forceNewWindow, title, opts) {
     jQuery(function () {
         // Check for dependencies we will need.
         // webroot_url is a global defined in main_screen.php or main.php.
-
         let bscss = top.webroot_url + '/public/assets/bootstrap/dist/css/bootstrap.min.css';
         let bscssRtl = top.webroot_url + '/public/assets/bootstrap-rtl/dist/css/bootstrap-rtl.min.css';
         let bsurl = top.webroot_url + '/public/assets/bootstrap/dist/js/bootstrap.min.js';
@@ -327,29 +378,7 @@ function dlgopen(url, winname, width, height, forceNewWindow, title, opts) {
 
     var mHeight, mWidth, mSize, msSize, dlgContainer, fullURL, where; // a growing list...
 
-    if (top.tab_mode) {
-        where = opts.type === 'iframe' ? top : window;
-    } else { // if frames u.i, this will search for the first body node so we have a landing place for stackable's
-        let wframe = window;
-        if (wframe.name !== 'left_nav') {
-            for (let i = 0; wframe.name !== 'RTop' && wframe.name !== 'RBot' && i < 6; wframe = wframe.parent) {
-                if (i === 5) {
-                    wframe = window;
-                }
-                i++;
-            }
-        } else {
-            wframe = top.window['RTop'];
-        }
-        for (let i = 0; wframe.document.body.localName !== 'body' && i < 6; wframe = wframe[i++]) {
-            if (i === 5) {
-                alert('<?php echo xlt("Unable to find window to build") ?>');
-                return false;
-            }
-        }
-
-        where = wframe; // A moving target for Frames UI.
-    }
+    where = opts.type === 'iframe' ? top : window;
 
     // get url straight...
     var fullURL = "";
@@ -359,8 +388,7 @@ function dlgopen(url, winname, width, height, forceNewWindow, title, opts) {
     if (url) {
         if (url[0] === "/") {
             fullURL = url
-        }
-        else {
+        } else {
             fullURL = window.location.href.substr(0, window.location.href.lastIndexOf("/") + 1) + url;
         }
     }
@@ -526,7 +554,6 @@ function dlgopen(url, winname, width, height, forceNewWindow, title, opts) {
         }).on('hidden.bs.modal', function (e) {
             // remove our dialog
             jQuery(this).remove();
-            console.log('Modal hidden then removed!');
 
             // now we can run functions in our window.
             if (opts.onClosed) {
@@ -607,7 +634,7 @@ function dlgopen(url, winname, width, height, forceNewWindow, title, opts) {
             var msg = data.error ?
                 data.error(r, s, params) :
                 '<div class="alert alert-danger">' +
-                '<strong><?php echo xlt("XHR Failed:") ?></strong> [ ' + params.url + '].' + '</div>';
+                '<strong>XHR Failed:</strong> [ ' + params.url + '].' + '</div>';
 
             $dialog.find('.modal-body').html(msg);
 
@@ -660,7 +687,7 @@ function dlgopen(url, winname, width, height, forceNewWindow, title, opts) {
             }
         } else {
             //if no buttons defined by user, add a standard close button.
-            oFoot.append('<button class="closeBtn btn btn-default" data-dismiss=modal type=button><?php echo xlt("Close") ?></button>');
+            oFoot.append('<button class="closeBtn btn btn-default" data-dismiss=modal type=button><i class="fa fa-times-circle"></i></button>');
         }
 
         return oFoot; // jquery object of modal footer.
@@ -670,13 +697,8 @@ function dlgopen(url, winname, width, height, forceNewWindow, title, opts) {
     function sizing(e, height) {
         let viewPortHt = 0;
         let $idoc = jQuery(e.currentTarget);
-        if (top.tab_mode) {
-            viewPortHt = Math.max(top.window.document.documentElement.clientHeight, top.window.innerHeight || 0);
-            viewPortWt = Math.max(top.window.document.documentElement.clientWidth, top.window.innerWidth || 0);
-        } else {
-            viewPortHt = window.innerHeight || 0;
-            viewPortWt = window.innerWidth || 0;
-        }
+        viewPortHt = Math.max(top.window.document.documentElement.clientHeight, top.window.innerHeight || 0);
+        viewPortWt = Math.max(top.window.document.documentElement.clientWidth, top.window.innerWidth || 0);
         let frameContentHt = opts.sizeHeight === 'full' ? viewPortHt : height;
         frameContentHt = frameContentHt > viewPortHt ? viewPortHt : frameContentHt;
         let hasHeader = $idoc.parents('div.modal-content').find('div.modal-header').height() || 0;
@@ -688,8 +710,6 @@ function dlgopen(url, winname, width, height, forceNewWindow, title, opts) {
         maxsize = maxsize + 'vh';
         size = size + 'vh';
         $idoc.parents('div.modal-body').css({'height': size, 'max-height': maxsize, 'max-width': '96vw'});
-        console.log('Modal loaded and sized! Content:' + frameContentHt + ' Viewport:' + viewPortHt + ' Modal height:' +
-            size + ' Type:' + opts.sizeHeight + ' Width:' + hasHeader + ' isFooter:' + hasFooter);
 
         return size;
     }
@@ -700,11 +720,7 @@ function dlgopen(url, winname, width, height, forceNewWindow, title, opts) {
         let idoc = e.currentTarget.contentDocument ? e.currentTarget.contentDocument : e.currentTarget.contentWindow.document;
         jQuery(e.currentTarget).parents('div.modal-content').height('');
         jQuery(e.currentTarget).parent('div.modal-body').css({'height': 0});
-        if (top.tab_mode) {
-            viewPortHt = top.window.innerHeight || 0;
-        } else {
-            viewPortHt = where.window.innerHeight || 0;
-        }
+        viewPortHt = top.window.innerHeight || 0;
         //minSize = 100;
         let frameContentHt = Math.max(jQuery(idoc).height(), idoc.body.offsetHeight || 0) + 30;
         frameContentHt = frameContentHt < minSize ? minSize : frameContentHt;
@@ -718,11 +734,7 @@ function dlgopen(url, winname, width, height, forceNewWindow, title, opts) {
         size = size + 'vh'; // will start the dialog as responsive. Any resize by user turns dialog to absolute positioning.
 
         jQuery(e.currentTarget).parent('div.modal-body').css({'height': size, 'max-height': maxsize}); // Set final size. Width was previously set.
-        //jQuery(e.currentTarget).parent('div.modal-body').height(size)
-        console.log('Modal loaded and sized! Content:' + frameContentHt + ' Viewport:' + viewPortHt + ' Modal height:' +
-            size + ' Max height:' + maxsize + ' isHeader:' + (hasHeader > 0 ? 'True ' : 'False ') + ' isFooter:' + (hasFooter > 0 ? 'True' : 'False'));
 
         return size;
     }
-
 }

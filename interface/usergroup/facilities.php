@@ -14,12 +14,13 @@
 require_once("../globals.php");
 require_once("../../library/acl.inc");
 
+use OpenEMR\Common\Csrf\CsrfUtils;
 use OpenEMR\Core\Header;
 use OpenEMR\Services\FacilityService;
 
 if (!empty($_POST)) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
+    if (!CsrfUtils::verifyCsrfToken($_POST["csrf_token_form"])) {
+        CsrfUtils::csrfNotVerified();
     }
 }
 
@@ -27,77 +28,79 @@ $facilityService = new FacilityService();
 
 $alertmsg = '';
 
-/*		Inserting New facility					*/
+/*      Inserting New facility                  */
 if (isset($_POST["mode"]) && $_POST["mode"] == "facility" && $_POST["newmode"] != "admin_facility") {
     $newFacility = array(
-      "name" => trim(isset($_POST["facility"]) ? $_POST["facility"] : ''),
-      "phone" => trim(isset($_POST["phone"]) ? $_POST["phone"] : ''),
-      "fax" => trim(isset($_POST["fax"]) ? $_POST["fax"] : ''),
-      "street" => trim(isset($_POST["street"]) ? $_POST["street"] : ''),
-      "city" => trim(isset($_POST["city"]) ? $_POST["city"] : ''),
-      "state" => trim(isset($_POST["state"]) ? $_POST["state"] : ''),
-      "postal_code" => trim(isset($_POST["postal_code"]) ? $_POST["postal_code"] : ''),
-      "country_code" => trim(isset($_POST["country_code"]) ? $_POST["country_code"] : ''),
-      "federal_ein" => trim(isset($_POST["federal_ein"]) ? $_POST["federal_ein"] : ''),
-      "website" => trim(isset($_POST["website"]) ? $_POST["website"] : ''),
-      "email" => trim(isset($_POST["email"]) ? $_POST["email"] : ''),
-      "color" => trim(isset($_POST["ncolor"]) ? $_POST["ncolor"] : ''),
-      "service_location" => trim(isset($_POST["service_location"]) ? $_POST["service_location"] : ''),
-      "billing_location" => trim(isset($_POST["billing_location"]) ? $_POST["billing_location"] : ''),
-      "accepts_assignment" => trim(isset($_POST["accepts_assignment"]) ? $_POST["accepts_assignment"] : ''),
-      "pos_code" => trim(isset($_POST["pos_code"]) ? $_POST["pos_code"] : ''),
-      "domain_identifier" => trim(isset($_POST["domain_identifier"]) ? $_POST["domain_identifier"] : ''),
-      "attn" => trim(isset($_POST["attn"]) ? $_POST["attn"] : ''),
-      "tax_id_type" =>  trim(isset($_POST["tax_id_type"]) ? $_POST["tax_id_type"] : ''),
-      "primary_business_entity" => trim(isset($_POST["primary_business_entity"]) ? $_POST["primary_business_entity"] : ''),
-      "facility_npi" => trim(isset($_POST["facility_npi"]) ? $_POST["facility_npi"] : ''),
-      "facility_taxonomy" => trim(isset($_POST["facility_taxonomy"]) ? $_POST["facility_taxonomy"] : ''),
-      "facility_code" => trim(isset($_POST["facility_id"]) ? $_POST["facility_id"] : ''),
-      "mail_street" => trim(isset($_POST["mail_street"]) ? $_POST["mail_street"] : ''),
+        "name" => trim(isset($_POST["facility"]) ? $_POST["facility"] : ''),
+        "phone" => trim(isset($_POST["phone"]) ? $_POST["phone"] : ''),
+        "fax" => trim(isset($_POST["fax"]) ? $_POST["fax"] : ''),
+        "street" => trim(isset($_POST["street"]) ? $_POST["street"] : ''),
+        "city" => trim(isset($_POST["city"]) ? $_POST["city"] : ''),
+        "state" => trim(isset($_POST["state"]) ? $_POST["state"] : ''),
+        "postal_code" => trim(isset($_POST["postal_code"]) ? $_POST["postal_code"] : ''),
+        "country_code" => trim(isset($_POST["country_code"]) ? $_POST["country_code"] : ''),
+        "federal_ein" => trim(isset($_POST["federal_ein"]) ? $_POST["federal_ein"] : ''),
+        "website" => trim(isset($_POST["website"]) ? $_POST["website"] : ''),
+        "email" => trim(isset($_POST["email"]) ? $_POST["email"] : ''),
+        "color" => trim(isset($_POST["ncolor"]) ? $_POST["ncolor"] : ''),
+        "service_location" => trim(isset($_POST["service_location"]) ? $_POST["service_location"] : ''),
+        "billing_location" => trim(isset($_POST["billing_location"]) ? $_POST["billing_location"] : ''),
+        "accepts_assignment" => trim(isset($_POST["accepts_assignment"]) ? $_POST["accepts_assignment"] : ''),
+        "pos_code" => trim(isset($_POST["pos_code"]) ? $_POST["pos_code"] : ''),
+        "domain_identifier" => trim(isset($_POST["domain_identifier"]) ? $_POST["domain_identifier"] : ''),
+        "attn" => trim(isset($_POST["attn"]) ? $_POST["attn"] : ''),
+        "tax_id_type" =>  trim(isset($_POST["tax_id_type"]) ? $_POST["tax_id_type"] : ''),
+        "primary_business_entity" => trim(isset($_POST["primary_business_entity"]) ? $_POST["primary_business_entity"] : ''),
+        "facility_npi" => trim(isset($_POST["facility_npi"]) ? $_POST["facility_npi"] : ''),
+        "facility_taxonomy" => trim(isset($_POST["facility_taxonomy"]) ? $_POST["facility_taxonomy"] : ''),
+        "facility_code" => trim(isset($_POST["facility_id"]) ? $_POST["facility_id"] : ''),
+        "mail_street" => trim(isset($_POST["mail_street"]) ? $_POST["mail_street"] : ''),
         "mail_street2" => trim(isset($_POST["mail_street2"]) ? $_POST["mail_street2"] : ''),
         "mail_city" => trim(isset($_POST["mail_city"]) ? $_POST["mail_city"] : ''),
         "mail_state" => trim(isset($_POST["mail_state"]) ? $_POST["mail_state"] : ''),
         "mail_zip" => trim(isset($_POST["mail_zip"]) ? $_POST["mail_zip"] : ''),
-        "oid" => trim(isset($_POST["oid"]) ? $_POST["oid"] : '')
+        "oid" => trim(isset($_POST["oid"]) ? $_POST["oid"] : ''),
+        "iban" => trim(isset($_POST["iban"]) ? $_POST["iban"] : '')
     );
 
     $insert_id = $facilityService->insert($newFacility);
     exit(); // sjp 12/20/17 for ajax save
 }
 
-/*		Editing existing facility					*/
+/*      Editing existing facility                   */
 if (isset($_POST["mode"]) && $_POST["mode"] == "facility" && $_POST["newmode"] == "admin_facility") {
     $newFacility = array(
-      "fid" => trim(isset($_POST["fid"]) ? $_POST["fid"] : ''),
-      "name" => trim(isset($_POST["facility"]) ? $_POST["facility"] : ''),
-      "phone" => trim(isset($_POST["phone"]) ? $_POST["phone"] : ''),
-      "fax" => trim(isset($_POST["fax"]) ? $_POST["fax"] : ''),
-      "street" => trim(isset($_POST["street"]) ? $_POST["street"] : ''),
-      "city" => trim(isset($_POST["city"]) ? $_POST["city"] : ''),
-      "state" => trim(isset($_POST["state"]) ? $_POST["state"] : ''),
-      "postal_code" => trim(isset($_POST["postal_code"]) ? $_POST["postal_code"] : ''),
-      "country_code" => trim(isset($_POST["country_code"]) ? $_POST["country_code"] : ''),
-      "federal_ein" => trim(isset($_POST["federal_ein"]) ? $_POST["federal_ein"] : ''),
-      "website" => trim(isset($_POST["website"]) ? $_POST["website"] : ''),
-      "email" => trim(isset($_POST["email"]) ? $_POST["email"] : ''),
-      "color" => trim(isset($_POST["ncolor"]) ? $_POST["ncolor"] : ''),
-      "service_location" => trim(isset($_POST["service_location"]) ? $_POST["service_location"] : ''),
-      "billing_location" => trim(isset($_POST["billing_location"]) ? $_POST["billing_location"] : ''),
-      "accepts_assignment" => trim(isset($_POST["accepts_assignment"]) ? $_POST["accepts_assignment"] : ''),
-      "pos_code" => trim(isset($_POST["pos_code"]) ? $_POST["pos_code"] : ''),
-      "domain_identifier" => trim(isset($_POST["domain_identifier"]) ? $_POST["domain_identifier"] : ''),
-      "attn" => trim(isset($_POST["attn"]) ? $_POST["attn"] : ''),
-      "tax_id_type" =>  trim(isset($_POST["tax_id_type"]) ? $_POST["tax_id_type"] : ''),
-      "primary_business_entity" => trim(isset($_POST["primary_business_entity"]) ? $_POST["primary_business_entity"] : ''),
-      "facility_npi" => trim(isset($_POST["facility_npi"]) ? $_POST["facility_npi"] : ''),
-      "facility_taxonomy" => trim(isset($_POST["facility_taxonomy"]) ? $_POST["facility_taxonomy"] : ''),
-      "facility_code" => trim(isset($_POST["facility_id"]) ? $_POST["facility_id"] : ''),
+        "fid" => trim(isset($_POST["fid"]) ? $_POST["fid"] : ''),
+        "name" => trim(isset($_POST["facility"]) ? $_POST["facility"] : ''),
+        "phone" => trim(isset($_POST["phone"]) ? $_POST["phone"] : ''),
+        "fax" => trim(isset($_POST["fax"]) ? $_POST["fax"] : ''),
+        "street" => trim(isset($_POST["street"]) ? $_POST["street"] : ''),
+        "city" => trim(isset($_POST["city"]) ? $_POST["city"] : ''),
+        "state" => trim(isset($_POST["state"]) ? $_POST["state"] : ''),
+        "postal_code" => trim(isset($_POST["postal_code"]) ? $_POST["postal_code"] : ''),
+        "country_code" => trim(isset($_POST["country_code"]) ? $_POST["country_code"] : ''),
+        "federal_ein" => trim(isset($_POST["federal_ein"]) ? $_POST["federal_ein"] : ''),
+        "website" => trim(isset($_POST["website"]) ? $_POST["website"] : ''),
+        "email" => trim(isset($_POST["email"]) ? $_POST["email"] : ''),
+        "color" => trim(isset($_POST["ncolor"]) ? $_POST["ncolor"] : ''),
+        "service_location" => trim(isset($_POST["service_location"]) ? $_POST["service_location"] : ''),
+        "billing_location" => trim(isset($_POST["billing_location"]) ? $_POST["billing_location"] : ''),
+        "accepts_assignment" => trim(isset($_POST["accepts_assignment"]) ? $_POST["accepts_assignment"] : ''),
+        "pos_code" => trim(isset($_POST["pos_code"]) ? $_POST["pos_code"] : ''),
+        "domain_identifier" => trim(isset($_POST["domain_identifier"]) ? $_POST["domain_identifier"] : ''),
+        "attn" => trim(isset($_POST["attn"]) ? $_POST["attn"] : ''),
+        "tax_id_type" =>  trim(isset($_POST["tax_id_type"]) ? $_POST["tax_id_type"] : ''),
+        "primary_business_entity" => trim(isset($_POST["primary_business_entity"]) ? $_POST["primary_business_entity"] : ''),
+        "facility_npi" => trim(isset($_POST["facility_npi"]) ? $_POST["facility_npi"] : ''),
+        "facility_taxonomy" => trim(isset($_POST["facility_taxonomy"]) ? $_POST["facility_taxonomy"] : ''),
+        "facility_code" => trim(isset($_POST["facility_id"]) ? $_POST["facility_id"] : ''),
         "mail_street" => trim(isset($_POST["mail_street"]) ? $_POST["mail_street"] : ''),
         "mail_street2" => trim(isset($_POST["mail_street2"]) ? $_POST["mail_street2"] : ''),
         "mail_city" => trim(isset($_POST["mail_city"]) ? $_POST["mail_city"] : ''),
         "mail_state" => trim(isset($_POST["mail_state"]) ? $_POST["mail_state"] : ''),
         "mail_zip" => trim(isset($_POST["mail_zip"]) ? $_POST["mail_zip"] : ''),
-        "oid" => trim(isset($_POST["oid"]) ? $_POST["oid"] : '')
+        "oid" => trim(isset($_POST["oid"]) ? $_POST["oid"] : ''),
+        "iban" => trim(isset($_POST["iban"]) ? $_POST["iban"] : '')
     );
 
     $facilityService->update($newFacility);
@@ -124,7 +127,7 @@ function refreshme() {
     top.restoreSession();
     document.location.reload();
 }
-$(document).ready(function(){
+$(function(){
 
     $(".medium_modal").on('click', function(e) {
         e.preventDefault();e.stopPropagation();
@@ -217,14 +220,14 @@ $(document).ready(function(){
                                     if ($iter3["mail_state"]!="") {
                                         $varmstate=$iter3["mail_state"].",";
                                     }
-                            ?>
+                                    ?>
                             <tr height="22">
                                  <td valign="top" class="text"><b><a href="facility_admin.php?fid=<?php echo attr_url($iter3["id"]); ?>" class="medium_modal"><span><?php echo xlt($iter3["name"]);?></span></a></b>&nbsp;</td>
                                  <td valign="top" class="text"><?php echo text($varstreet.$varcity.$varstate.$iter3["country_code"]." ".$iter3["postal_code"]); ?>&nbsp;</td>
                                  <td valign="top" class="text"><?php echo text($varmstreet.$varmcity.$varmstate.$iter3['mail_zip']); ?></td>
                                  <td><?php echo text($iter3["phone"]);?>&nbsp;</td>
                             </tr>
-                            <?php
+                                    <?php
                                 }
                             }
 
@@ -232,7 +235,7 @@ $(document).ready(function(){
                             <tr height="25">
                                 <td colspan="3"  style="text-align:center;font-weight:bold;"> <?php echo xlt("Currently there are no facilities."); ?></td>
                             </tr>
-                            <?php
+                                <?php
                             } ?>
                         </tbody>
                     </table>

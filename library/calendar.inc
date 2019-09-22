@@ -30,7 +30,7 @@ function toggleNoShow($cid)
 {
     $rez = sqlStatement("select noshow from calendar where id= ?", array($cid));
     $row=sqlFetchArray($rez);
-    $oldnoshowval = $row{noshow};
+    $oldnoshowval = $row['noshow'];
     $newnoshowval = !($oldnoshowval);
     $query = "update calendar set noshow= ? where id= ?";
     sqlStatement($query, [$newnoshowval, $cid]);
@@ -93,7 +93,7 @@ function getUsername($uID)
     return "";
 }
 
-//	returns an array of facility id and names
+//  returns an array of facility id and names
 function getUserFacilities($uID)
 {
     if (!$GLOBALS['restrict_user_facility']) {

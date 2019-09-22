@@ -20,8 +20,11 @@ require_once($GLOBALS['srcdir'] . '/acl.inc');
 require_once($GLOBALS['srcdir'] . '/appointments.inc.php');
 require_once($GLOBALS['srcdir'] . '/options.inc.php');
 
-if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-    csrfNotVerified();
+use OpenEMR\Common\Crypto\CryptoGen;
+use OpenEMR\Common\Csrf\CsrfUtils;
+
+if (!CsrfUtils::verifyCsrfToken($_POST["csrf_token_form"])) {
+    CsrfUtils::csrfNotVerified();
 }
 
 $nextLocation = 0;      // offset to resume scanning
@@ -81,7 +84,6 @@ function dataFixup($data, $title = '')
 // Return a string naming all issues for the specified patient and issue type.
 function getIssues($type)
 {
-  // global $itemSeparator;
     $tmp = '';
     $lres = sqlStatement("SELECT title, comments FROM lists WHERE " .
     "pid = ? AND type = ? AND enddate IS NULL " .
@@ -206,10 +208,9 @@ function doSubs($s)
             $s = keyReplace($s, dataFixup(getIssues('medication'), xl('Medications')));
         } else if (keySearch($s, '{ProblemList}')) {
             $s = keyReplace($s, dataFixup(getIssues('medical_problem'), xl('Problem List')));
-        } // This tag indicates the fields from here until {/GRP} are a group of fields
-        // separated by semicolons.  Fields with no data are omitted, and fields with
-        // data are prepended with their field label from the form layout.
-        else if (keySearch($s, '{GRP}')) {
+        } else if (keySearch($s, '{GRP}')) { // This tag indicates the fields from here until {/GRP} are a group
+            // of fields separated by semicolons.  Fields with no data are omitted, and fields with
+            // data are prepended with their field label from the form layout.
             ++$groupLevel;
             $groupCount = 0;
             $s = keyReplace($s, '');
@@ -219,15 +220,15 @@ function doSubs($s)
             }
 
             $s = keyReplace($s, '');
-        } // This is how we specify the separator between group items in a way that
-        // is independent of the document format. Whatever is between {ITEMSEP} and
-        // {/ITEMSEP} is the separator string.  Default is "; ".
-        else if (preg_match('/^\{ITEMSEP\}(.*?)\{\/ITEMSEP\}/', substr($s, $keyLocation), $matches)) {
+        } else if (preg_match('/^\{ITEMSEP\}(.*?)\{\/ITEMSEP\}/', substr($s, $keyLocation), $matches)) {
+            // This is how we specify the separator between group items in a way that
+            // is independent of the document format. Whatever is between {ITEMSEP} and
+            // {/ITEMSEP} is the separator string.  Default is "; ".
             $itemSeparator = $matches[1];
             $keyLength = strlen($matches[0]);
             $s = keyReplace($s, '');
-        } // This handles keys like {LBFxxx:fieldid} for layout-based encounter forms.
-        else if (preg_match('/^\{(LBF\w+):(\w+)\}/', substr($s, $keyLocation), $matches)) {
+        } else if (preg_match('/^\{(LBF\w+):(\w+)\}/', substr($s, $keyLocation), $matches)) {
+            // This handles keys like {LBFxxx:fieldid} for layout-based encounter forms.
             $formname = $matches[1];
             $fieldid  = $matches[2];
             $keyLength = 3 + strlen($formname) + strlen($fieldid);
@@ -259,8 +260,8 @@ function doSubs($s)
             }
 
             $s = keyReplace($s, dataFixup($data, $title));
-        } // This handles keys like {DEM:fieldid} and {HIS:fieldid}.
-        else if (preg_match('/^\{(DEM|HIS):(\w+)\}/', substr($s, $keyLocation), $matches)) {
+        } else if (preg_match('/^\{(DEM|HIS):(\w+)\}/', substr($s, $keyLocation), $matches)) {
+            // This handles keys like {DEM:fieldid} and {HIS:fieldid}.
             $formname = $matches[1];
             $fieldid  = $matches[2];
             $keyLength = 3 + strlen($formname) + strlen($fieldid);
@@ -364,8 +365,9 @@ if ('dotx' == $ext) {
 $fileData = file_get_contents($templatepath);
 
 // Decrypt file, if applicable.
-if (cryptCheckStandard($fileData)) {
-    $fileData = decryptStandard($fileData, null, 'database');
+$cryptoGen = new CryptoGen();
+if ($cryptoGen->cryptCheckStandard($fileData)) {
+    $fileData = $cryptoGen->decryptStandard($fileData, null, 'database');
 }
 
 // Create a temporary file to hold the template.
@@ -406,14 +408,14 @@ if ($pi['extension'] !== '') {
 header('Content-Description: File Transfer');
 header('Content-Transfer-Encoding: binary');
 header('Expires: 0');
+header("Cache-control: private");
 header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-header('Pragma: public');
-// attachment, not inline
-header("Content-Disposition: attachment; filename=\"$dlname\"");
-header("Content-Type: $mimetype");
+header("Content-Type: $mimetype; charset=utf-8");
 header("Content-Length: " . filesize($fname));
-ob_clean();
-flush();
-readfile($fname);
+header('Content-Disposition: attachment; filename="'. $dlname .'"');
+
+ob_end_clean();
+@readfile($fname) or error_log("Template temp file not found: " . $fname);
 
 unlink($fname);
+exit;

@@ -11,7 +11,7 @@
  * @author    Ranganath Pathak <pathak@scrs1.org>
  * @copyright Copyright (c) 2017-2019 Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2017 Sharon Cohen <sharonco@matrix.co.il>
- * @copyright Copyright (c) 2018 Stephen Waite <stephen.waite@cmsvt.com>
+ * @copyright Copyright (c) 2018-2019 Stephen Waite <stephen.waite@cmsvt.com>
  * @copyright Copyright (c) 2018 Ranganath Pathak <pathak@scrs1.org>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
@@ -23,16 +23,17 @@ require_once("$srcdir/acl.inc");
 require_once("$srcdir/options.inc.php");
 require_once("../history/history.inc.php");
 require_once("$srcdir/edi.inc");
-require_once("$srcdir/invoice_summary.inc.php");
 require_once("$srcdir/clinical_rules.php");
 require_once("$srcdir/options.js.php");
 require_once("$srcdir/group.inc");
 require_once(dirname(__FILE__)."/../../../library/appointments.inc.php");
 
+use OpenEMR\Common\Csrf\CsrfUtils;
 use OpenEMR\Core\Header;
 use OpenEMR\Menu\PatientMenuRole;
 use OpenEMR\Reminder\BirthdayReminder;
 use OpenEMR\OeUI\OemrUI;
+use OpenEMR\Events\PatientDemographics\ViewEvent;
 
 if (isset($_GET['set_pid'])) {
     include_once("$srcdir/pid.inc");
@@ -170,7 +171,6 @@ if ($result3['provider']) {   // Use provider in case there is an ins record w/ 
     <?php Header::setupHeader(['common']); ?>
 
 <script type="text/javascript" language="JavaScript">
-
  function oldEvt(apptdate, eventid) {
    let title = <?php echo xlj('Appointments'); ?>;
    dlgopen('../../main/calendar/add_edit_event.php?date=' + encodeURIComponent(apptdate) + '&eid=' + encodeURIComponent(eventid), '_blank', 725, 500, '', title);
@@ -187,7 +187,7 @@ if ($result3['provider']) {   // Use provider in case there is an ins record w/ 
 
  // Process click on Delete link.
  function deleteme() { // @todo don't think this is used any longer!!
-  dlgopen('../deleter.php?patient=' + <?php echo js_url($pid); ?> + '&csrf_token_form=' + <?php echo js_url(collectCsrfToken()); ?>, '_blank', 500, 450, '', '',{
+  dlgopen('../deleter.php?patient=' + <?php echo js_url($pid); ?> + '&csrf_token_form=' + <?php echo js_url(CsrfUtils::collectCsrfToken()); ?>, '_blank', 500, 450, '', '',{
       allowResize: false,
       allowDrag: false,
       dialogId: 'patdel',
@@ -198,11 +198,7 @@ if ($result3['provider']) {   // Use provider in case there is an ins record w/ 
 
  // Called by the deleteme.php window on a successful delete.
  function imdeleted() {
-    <?php if ($GLOBALS['new_tabs_layout']) { ?>
    top.clearPatient();
-    <?php } else { ?>
-   parent.left_nav.clearPatient();
-    <?php } ?>
  }
 
  function newEvt() {
@@ -226,7 +222,7 @@ function toggleIndicator(target,div) {
             {
                 target: div,
                 mode: 0,
-                csrf_token_form: <?php echo js_escape(collectCsrfToken()); ?>
+                csrf_token_form: <?php echo js_escape(CsrfUtils::collectCsrfToken()); ?>
             }
         );
     } else {
@@ -236,7 +232,7 @@ function toggleIndicator(target,div) {
             {
                 target: div,
                 mode: 1,
-                csrf_token_form: <?php echo js_escape(collectCsrfToken()); ?>
+                csrf_token_form: <?php echo js_escape(CsrfUtils::collectCsrfToken()); ?>
             }
         );
     }
@@ -253,7 +249,7 @@ function editScripts(url) {
         __this.find("#backButton").css("display", "");
         __this.find("#addButton").css("display", "none");
 
-        var iam = top.tab_mode ? top.frames.editScripts : window[1];
+        var iam = top.frames.editScripts;
         iam.location.href = '<?php echo $GLOBALS['webroot']?>/controller.php?prescription&edit&id=0&pid=' + <?php echo js_url($pid); ?>;
     };
     var ListScripts = function () {
@@ -262,7 +258,7 @@ function editScripts(url) {
         __this.find("#clearButton").css("display", "none");
         __this.find("#backButton").css("display", "none");
         __this.find("#addButton").css("display", "");
-        var iam = top.tab_mode ? top.frames.editScripts : window[1];
+        var iam = top.frames.editScripts
         iam.location.href = '<?php echo $GLOBALS['webroot']?>/controller.php?prescription&list&id=' + <?php echo js_url($pid); ?>;
     };
 
@@ -348,7 +344,7 @@ $(document).ready(function(){
             if ($GLOBALS['erx_import_status_message']) { ?>
             if(msg_updation)
               alert(msg_updation);
-            <?php
+                <?php
             }
 
             //}
@@ -359,18 +355,18 @@ $(document).ready(function(){
     $("#stats_div").load("stats.php",
         {
             embeddedScreen : true,
-            csrf_token_form: <?php echo js_escape(collectCsrfToken()); ?>
+            csrf_token_form: <?php echo js_escape(CsrfUtils::collectCsrfToken()); ?>
         },
         function() {}
     );
     $("#pnotes_ps_expand").load("pnotes_fragment.php",
         {
-            csrf_token_form: <?php echo js_escape(collectCsrfToken()); ?>
+            csrf_token_form: <?php echo js_escape(CsrfUtils::collectCsrfToken()); ?>
         }
     );
     $("#disclosures_ps_expand").load("disc_fragment.php",
         {
-            csrf_token_form: <?php echo js_escape(collectCsrfToken()); ?>
+            csrf_token_form: <?php echo js_escape(CsrfUtils::collectCsrfToken()); ?>
         }
     );
 
@@ -379,7 +375,7 @@ $(document).ready(function(){
       $("#clinical_reminders_ps_expand").load("clinical_reminders_fragment.php",
           {
               embeddedScreen : true,
-              csrf_token_form: <?php echo js_escape(collectCsrfToken()); ?>
+              csrf_token_form: <?php echo js_escape(CsrfUtils::collectCsrfToken()); ?>
           },
           function() {
           // (note need to place javascript code here also to get the dynamic link to work)
@@ -404,7 +400,7 @@ $(document).ready(function(){
       top.restoreSession();
       $("#patient_reminders_ps_expand").load("patient_reminders_fragment.php",
           {
-              csrf_token_form: <?php echo js_escape(collectCsrfToken()); ?>
+              csrf_token_form: <?php echo js_escape(CsrfUtils::collectCsrfToken()); ?>
           }
       );
     <?php } // end prw?>
@@ -413,7 +409,7 @@ $(document).ready(function(){
     // Initialize the Vitals form if it is registered and user is authorized.
     $("#vitals_ps_expand").load("vitals_fragment.php",
         {
-            csrf_token_form: <?php echo js_escape(collectCsrfToken()); ?>
+            csrf_token_form: <?php echo js_escape(CsrfUtils::collectCsrfToken()); ?>
         }
     );
 <?php } ?>
@@ -421,7 +417,7 @@ $(document).ready(function(){
     // Initialize track_anything
     $("#track_anything_ps_expand").load("track_anything_fragment.php",
         {
-            csrf_token_form: <?php echo js_escape(collectCsrfToken()); ?>
+            csrf_token_form: <?php echo js_escape(CsrfUtils::collectCsrfToken()); ?>
         }
     );
 
@@ -429,7 +425,7 @@ $(document).ready(function(){
     // Initialize labdata
     $("#labdata_ps_expand").load("labdata_fragment.php",
         {
-            csrf_token_form: <?php echo js_escape(collectCsrfToken()); ?>
+            csrf_token_form: <?php echo js_escape(CsrfUtils::collectCsrfToken()); ?>
         }
     );
 <?php
@@ -438,13 +434,13 @@ $gfres = sqlStatement("SELECT grp_form_id FROM layout_group_properties WHERE " .
   "grp_form_id LIKE 'LBF%' AND grp_group_id = '' AND grp_repeats > 0 AND grp_activity = 1 " .
   "ORDER BY grp_seq, grp_title");
 while ($gfrow = sqlFetchArray($gfres)) {
-?>
+    ?>
     $(<?php echo js_escape("#".$gfrow['grp_form_id']."_ps_expand"); ?>).load("lbf_fragment.php?formname=" + <?php echo js_url($gfrow['grp_form_id']); ?>,
         {
-            csrf_token_form: <?php echo js_escape(collectCsrfToken()); ?>
+            csrf_token_form: <?php echo js_escape(CsrfUtils::collectCsrfToken()); ?>
         }
     );
-<?php
+    <?php
 }
 ?>
     tabbify();
@@ -467,11 +463,11 @@ while ($gfrow = sqlFetchArray($gfres)) {
     $(".rx_modal").on('click', function(e) {
         e.preventDefault();e.stopPropagation();
         var AddAmendment = function () {
-            var iam = top.tab_mode ? top.frames.editAmendments : window[0];
+            var iam = top.frames.editAmendments;
             iam.location.href = "<?php echo $GLOBALS['webroot']?>/interface/patient_file/summary/add_edit_amendments.php"
         };
         var ListAmendments = function () {
-            var iam = top.tab_mode ? top.frames.editAmendments : window[0];
+            var iam = top.frames.editAmendments;
             iam.location.href = "<?php echo $GLOBALS['webroot']?>/interface/patient_file/summary/list_amendments.php"
         };
         var title = <?php echo xlj('Amendments'); ?>;
@@ -567,7 +563,7 @@ while ($gfrow = sqlFetchArray($gfres)) {
     //  3. The notification has not been turned off (or shown depending on global selection) for this year
     $birthdayAlert = new BirthdayReminder($pid, $_SESSION['authId']);
     if ($birthdayAlert->isDisplayBirthdayAlert()) {
-    ?>
+        ?>
     // show the active reminder modal
     dlgopen('', 'bdayreminder', 300, 170, '', false, {
         allowResize: false,
@@ -589,11 +585,6 @@ while ($gfrow = sqlFetchArray($gfres)) {
 // JavaScript stuff to do when a new patient is set.
 //
 function setMyPatient() {
- // Avoid race conditions with loading of the left_nav or Title frame.
- if (!parent.allFramesLoaded()) {
-  setTimeout("setMyPatient()", 500);
-  return;
- }
 <?php
 if (isset($_GET['set_pid'])) {
     $date_of_death = is_patient_deceased($pid)['date_deceased']; ?>
@@ -608,22 +599,22 @@ if (isset($_GET['set_pid'])) {
     var CalendarCategoryArray = new Array;
     var EncounterIdArray = new Array;
     var Count = 0;
-<?php
+    <?php
    //Encounter details are stored to javacript as array.
-   $result4 = sqlStatement("SELECT fe.encounter,fe.date,openemr_postcalendar_categories.pc_catname FROM form_encounter AS fe ".
+    $result4 = sqlStatement("SELECT fe.encounter,fe.date,openemr_postcalendar_categories.pc_catname FROM form_encounter AS fe ".
     " left join openemr_postcalendar_categories on fe.pc_catid=openemr_postcalendar_categories.pc_catid  WHERE fe.pid = ? order by fe.date desc", array($pid));
-if (sqlNumRows($result4)>0) {
-    while ($rowresult4 = sqlFetchArray($result4)) {?>
+    if (sqlNumRows($result4)>0) {
+        while ($rowresult4 = sqlFetchArray($result4)) {?>
             EncounterIdArray[Count] = <?php echo js_escape($rowresult4['encounter']); ?>;
             EncounterDateArray[Count] = <?php echo js_escape(oeFormatShortDate(date("Y-m-d", strtotime($rowresult4['date'])))); ?>;
             CalendarCategoryArray[Count] = <?php echo js_escape(xl_appt_category($rowresult4['pc_catname'])); ?>;
             Count++;
-        <?php
+            <?php
+        }
     }
-}
-?>
+    ?>
     parent.left_nav.setPatientEncounter(EncounterIdArray,EncounterDateArray,CalendarCategoryArray);
-<?php
+    <?php
 } // end setting new pid ?>
  parent.left_nav.syncRadios();
 <?php if ((isset($_GET['set_pid']) ) && (isset($_GET['set_encounterid'])) && ( intval($_GET['set_encounterid']) > 0 )) {
@@ -631,16 +622,9 @@ if (sqlNumRows($result4)>0) {
     $_SESSION['encounter'] = $encounter;
     $query_result = sqlQuery("SELECT `date` FROM `form_encounter` WHERE `encounter` = ?", array($encounter)); ?>
  encurl = 'encounter/encounter_top.php?set_encounter=' + <?php echo js_url($encounter);?> + '&pid=' + <?php echo js_url($pid);?>;
-    <?php if ($GLOBALS['new_tabs_layout']) { ?>
   parent.left_nav.setEncounter(<?php echo js_escape(oeFormatShortDate(date("Y-m-d", strtotime($query_result['date'])))); ?>, <?php echo js_escape($encounter); ?>, 'enc');
     top.restoreSession();
   parent.left_nav.loadFrame('enc2', 'enc', 'patient_file/' + encurl);
-    <?php } else { ?>
-  var othername = (window.name == 'RTop') ? 'RBot' : 'RTop';
-  parent.left_nav.setEncounter(<?php echo js_escape(attr(oeFormatShortDate(date("Y-m-d", strtotime($query_result['date']))))); ?>, <?php echo js_escape($encounter); ?>, othername);
-    top.restoreSession();
-  parent.frames[othername].location.href = '../' + encurl;
-    <?php } ?>
 <?php } // end setting new encounter id (only if new pid is also set) ?>
 }
 
@@ -663,7 +647,7 @@ $grparr = array();
 getLayoutProperties('DEM', $grparr, 'grp_size');
 if (!empty($grparr['']['grp_size'])) {
     $FONTSIZE = $grparr['']['grp_size'];
-?>
+    ?>
 /* Override font sizes in the theme. */
 #DEM .groupname {
   font-size: <?php echo attr($FONTSIZE); ?>pt;
@@ -704,6 +688,7 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
 
         <a href='../birthday_alert/birthday_pop.php?pid=<?php echo attr_url($pid); ?>&user_id=<?php echo attr_url($_SESSION['authId']); ?>' id='birthday_popup' style='display: none;' onclick='top.restoreSession()'></a>
         <?php
+
         $thisauth = acl_check('patients', 'demo');
         if ($thisauth) {
             if ($result['squad'] && ! acl_check('squads', $result['squad'])) {
@@ -711,7 +696,12 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
             }
         }
 
-        if (!$thisauth) {
+        // Create and fire the patient demographics view event
+        $viewEvent = new ViewEvent($pid);
+        $viewEvent = $GLOBALS["kernel"]->getEventDispatcher()->dispatch(ViewEvent::EVENT_HANDLE, $viewEvent, 10);
+
+        if (!$thisauth ||
+            !$viewEvent->authorized()) {
             echo "<p>(" . xlt('Demographics not authorized') . ")</p>\n";
             echo "</body>\n</html>\n";
             exit();
@@ -724,7 +714,7 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                         <?php require_once("$include_root/patient_file/summary/dashboard_header.php"); ?>
                     </div>
                 </div>
-            <?php
+                <?php
             } // $thisauth
             ?>
 
@@ -787,51 +777,51 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                                         );
                                         ?>
                                     <br>
-                                <?php
+                                    <?php
                                 //PATIENT BALANCE,INS BALANCE naina@capminds.com
-                                $patientbalance = get_patient_balance($pid, false);
+                                    $patientbalance = get_patient_balance($pid, false);
                                 //Debit the patient balance from insurance balance
-                                $insurancebalance = get_patient_balance($pid, true) - $patientbalance;
-                                $totalbalance=$patientbalance + $insurancebalance;
+                                    $insurancebalance = get_patient_balance($pid, true) - $patientbalance;
+                                    $totalbalance=$patientbalance + $insurancebalance;
 
                                 // Show current balance and billing note, if any.
-                                echo "<table border='0'><tr><td>" .
-                                "<table ><tr><td><span class='bold'><font color='red'>" .
-                                xlt('Patient Balance Due') .
-                                " : " . text(oeFormatMoney($patientbalance)) .
-                                "</font></span></td></tr>".
-                                "<tr><td><span class='bold'><font color='red'>" .
-                                xlt('Insurance Balance Due') .
-                                " : " . text(oeFormatMoney($insurancebalance)) .
-                                "</font></span></td></tr>".
-                                "<tr><td><span class='bold'><font color='red'>" .
-                                xlt('Total Balance Due').
-                                " : " . text(oeFormatMoney($totalbalance)) .
-                                "</font></span></td></td></tr>";
-                                if (!empty($result['billing_note'])) {
-                                    echo "<tr><td><span class='bold'><font color='red'>" .
-                                    xlt('Billing Note') . ":" .
-                                    text($result['billing_note']) .
-                                    "</font></span></td></tr>";
-                                }
-
-                                if ($result3['provider']) {   // Use provider in case there is an ins record w/ unassigned insco
-                                    echo "<tr><td><span class='bold'>" .
-                                    xlt('Primary Insurance') . ': ' . text($insco_name) .
-                                    "</span>&nbsp;&nbsp;&nbsp;";
-                                    if ($result3['copay'] > 0) {
-                                        echo "<span class='bold'>" .
-                                        xlt('Copay') . ': ' .  text($result3['copay']) .
-                                        "</span>&nbsp;&nbsp;&nbsp;";
+                                    echo "<table border='0'><tr><td>" .
+                                    "<table ><tr><td><span class='bold'><font color='red'>" .
+                                    xlt('Patient Balance Due') .
+                                    " : " . text(oeFormatMoney($patientbalance)) .
+                                    "</font></span></td></tr>".
+                                    "<tr><td><span class='bold'><font color='red'>" .
+                                    xlt('Insurance Balance Due') .
+                                    " : " . text(oeFormatMoney($insurancebalance)) .
+                                    "</font></span></td></tr>".
+                                    "<tr><td><span class='bold'><font color='red'>" .
+                                    xlt('Total Balance Due').
+                                    " : " . text(oeFormatMoney($totalbalance)) .
+                                    "</font></span></td></td></tr>";
+                                    if (!empty($result['billing_note'])) {
+                                        echo "<tr><td><span class='bold'><font color='red'>" .
+                                        xlt('Billing Note') . ":" .
+                                        text($result['billing_note']) .
+                                        "</font></span></td></tr>";
                                     }
-                                    echo "<span class='bold'>" .
-                                    xlt('Effective Date') . ': ' .  text(oeFormatShortDate($result3['effdate'])) .
-                                    "</span></td></tr>";
-                                }
 
-                                echo "</table></td></tr></td></tr></table><br>";
+                                    if ($result3['provider']) {   // Use provider in case there is an ins record w/ unassigned insco
+                                        echo "<tr><td><span class='bold'>" .
+                                        xlt('Primary Insurance') . ': ' . text($insco_name) .
+                                        "</span>&nbsp;&nbsp;&nbsp;";
+                                        if ($result3['copay'] > 0) {
+                                            echo "<span class='bold'>" .
+                                            xlt('Copay') . ': ' .  text($result3['copay']) .
+                                            "</span>&nbsp;&nbsp;&nbsp;";
+                                        }
+                                        echo "<span class='bold'>" .
+                                        xlt('Effective Date') . ': ' .  text(oeFormatShortDate($result3['effdate'])) .
+                                        "</span></td></tr>";
+                                    }
 
-                        ?>
+                                    echo "</table></td></tr></td></tr></table><br>";
+
+                                    ?>
                                         </div> <!-- required for expand_collapse_widget -->
                                     </td>
                                 </tr>
@@ -840,62 +830,10 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                         <?php if (acl_check('patients', 'demo')) { ?>
                               <tr>
                                <td>
-                        <?php
+                            <?php
                         // Demographics expand collapse widget
-                        $widgetTitle = xl("Demographics");
-                        $widgetLabel = "demographics";
-                        $widgetButtonLabel = xl("Edit");
-                        $widgetButtonLink = "demographics_full.php";
-                        $widgetButtonClass = "";
-                        $linkMethod = "html";
-                        $bodyClass = "";
-                        $widgetAuth = acl_check('patients', 'demo', '', 'write');
-                        $fixedWidth = true;
-                        expand_collapse_widget(
-                            $widgetTitle,
-                            $widgetLabel,
-                            $widgetButtonLabel,
-                            $widgetButtonLink,
-                            $widgetButtonClass,
-                            $linkMethod,
-                            $bodyClass,
-                            $widgetAuth,
-                            $fixedWidth
-                        );
-                        ?>
-                                 <div id="DEM" >
-                                  <ul class="tabNav">
-                                    <?php display_layout_tabs('DEM', $result, $result2); ?>
-                                  </ul>
-                                  <div class="tabContainer">
-                                    <?php display_layout_tabs_data('DEM', $result, $result2); ?>
-                                  </div>
-                                 </div>
-                                <!--</div>  required for expand_collapse_widget -->
-                               </td>
-                              </tr>
-
-                              <tr>
-                               <td>
-                        <?php
-                        $insurance_count = 0;
-                        foreach (array('primary','secondary','tertiary') as $instype) {
-                            $enddate = 'Present';
-                            $query = "SELECT * FROM insurance_data WHERE " .
-                            "pid = ? AND type = ? " .
-                            "ORDER BY date DESC";
-                            $res = sqlStatement($query, array($pid, $instype));
-                            while ($row = sqlFetchArray($res)) {
-                                if ($row['provider']) {
-                                    $insurance_count++;
-                                }
-                            }
-                        }
-
-                        if ($insurance_count > 0) {
-                          // Insurance expand collapse widget
-                            $widgetTitle = xl("Insurance");
-                            $widgetLabel = "insurance";
+                            $widgetTitle = xl("Demographics");
+                            $widgetLabel = "demographics";
                             $widgetButtonLabel = xl("Edit");
                             $widgetButtonLink = "demographics_full.php";
                             $widgetButtonClass = "";
@@ -914,9 +852,61 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                                 $widgetAuth,
                                 $fixedWidth
                             );
+                            ?>
+                                 <div id="DEM" >
+                                  <ul class="tabNav">
+                                    <?php display_layout_tabs('DEM', $result, $result2); ?>
+                                  </ul>
+                                  <div class="tabContainer">
+                                    <?php display_layout_tabs_data('DEM', $result, $result2); ?>
+                                  </div>
+                                 </div>
+                                <!--</div>  required for expand_collapse_widget -->
+                               </td>
+                              </tr>
+
+                              <tr>
+                               <td>
+                            <?php
+                            $insurance_count = 0;
+                            foreach (array('primary','secondary','tertiary') as $instype) {
+                                $enddate = 'Present';
+                                $query = "SELECT * FROM insurance_data WHERE " .
+                                "pid = ? AND type = ? " .
+                                "ORDER BY date DESC";
+                                $res = sqlStatement($query, array($pid, $instype));
+                                while ($row = sqlFetchArray($res)) {
+                                    if ($row['provider']) {
+                                        $insurance_count++;
+                                    }
+                                }
+                            }
 
                             if ($insurance_count > 0) {
-                            ?>
+                              // Insurance expand collapse widget
+                                $widgetTitle = xl("Insurance");
+                                $widgetLabel = "insurance";
+                                $widgetButtonLabel = xl("Edit");
+                                $widgetButtonLink = "demographics_full.php";
+                                $widgetButtonClass = "";
+                                $linkMethod = "html";
+                                $bodyClass = "";
+                                $widgetAuth = acl_check('patients', 'demo', '', 'write');
+                                $fixedWidth = true;
+                                expand_collapse_widget(
+                                    $widgetTitle,
+                                    $widgetLabel,
+                                    $widgetButtonLabel,
+                                    $widgetButtonLink,
+                                    $widgetButtonClass,
+                                    $linkMethod,
+                                    $bodyClass,
+                                    $widgetAuth,
+                                    $fixedWidth
+                                );
+
+                                if ($insurance_count > 0) {
+                                    ?>
 
                                 <ul class="tabNav"><?php
                                             ///////////////////////////////// INSURANCE SECTION
@@ -948,8 +938,8 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                                             // Display the eligibility tab
                                             echo "<li><a id='eligibility' href='#'>" . xlt('Eligibility') . "</a></li>";
 
-                                            ?></ul><?php
-                            } ?>
+                                ?></ul><?php
+                                } ?>
 
                                         <div class="tabContainer">
                                             <?php
@@ -982,7 +972,7 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                                                             <?php $tempinstype=ucfirst($instype);
                                                             echo xlt($tempinstype.' Insurance'); ?>
                                                             <?php if (strcmp($row['date'], '0000-00-00') != 0) { ?>
-                                                            <?php echo ' ' . xlt('from') . ' ' . $row['date']; ?>
+                                                                <?php echo ' ' . xlt('from') . ' ' . $row['date']; ?>
                                                             <?php } ?>
                                                                     <?php echo ' ' . xlt('until') . ' ';
                                                                     echo (strcmp($enddate, 'Present') != 0) ? text($enddate) : xlt('Present'); ?>:</span>
@@ -1003,12 +993,10 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                                                                 }
                                                                 ?>
                                                               <br>
-                                                                <?php echo xlt('Policy Number'); ?>:
-                                                                <?php echo text($row['policy_number']) ?><br>
-                                                                <?php echo xlt('Plan Name'); ?>:
-                                                                <?php echo text($row['plan_name']); ?><br>
-                                                                <?php echo xlt('Group Number'); ?>:
-                                                                <?php echo text($row['group_number']); ?></span>
+                                                                <?php echo xlt('Policy Number'); ?>: <?php echo text($row['policy_number']) ?><br>
+                                                                <?php echo xlt('Plan Name'); ?>: <?php echo text($row['plan_name']); ?><br>
+                                                                <?php echo xlt('Group Number'); ?>: <?php echo text($row['group_number']); ?>
+                                                              </span>
                                                              </td>
                                                              <td valign='top'>
                                                                 <span class='bold'><?php echo xlt('Subscriber'); ?>: </span><br>
@@ -1137,11 +1125,11 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                                             }
                                             echo "</div></div>";
 
-                                    ///////////////////////////////// END INSURANCE SECTION
-                                    ?>
+                                        ///////////////////////////////// END INSURANCE SECTION
+                                            ?>
                                     </div>
 
-                        <?php } // ?>
+                            <?php } // ?>
 
                                     </td>
                                 </tr>
@@ -1150,29 +1138,29 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                         <?php if (acl_check('patients', 'notes')) { ?>
                                 <tr>
                                     <td width='650px'>
-                        <?php
+                            <?php
                         // Notes expand collapse widget
-                        $widgetTitle = xl("Messages");
-                        $widgetLabel = "pnotes";
-                        $widgetButtonLabel = xl("Edit");
-                        $widgetButtonLink = "pnotes_full.php?form_active=1";
-                        $widgetButtonClass = "";
-                        $linkMethod = "html";
-                        $bodyClass = "notab";
-                        $widgetAuth = acl_check('patients', 'notes', '', 'write');
-                        $fixedWidth = true;
-                        expand_collapse_widget(
-                            $widgetTitle,
-                            $widgetLabel,
-                            $widgetButtonLabel,
-                            $widgetButtonLink,
-                            $widgetButtonClass,
-                            $linkMethod,
-                            $bodyClass,
-                            $widgetAuth,
-                            $fixedWidth
-                        );
-                        ?>
+                            $widgetTitle = xl("Messages");
+                            $widgetLabel = "pnotes";
+                            $widgetButtonLabel = xl("Edit");
+                            $widgetButtonLink = "pnotes_full.php?form_active=1";
+                            $widgetButtonClass = "";
+                            $linkMethod = "html";
+                            $bodyClass = "notab";
+                            $widgetAuth = acl_check('patients', 'notes', '', 'write');
+                            $fixedWidth = true;
+                            expand_collapse_widget(
+                                $widgetTitle,
+                                $widgetLabel,
+                                $widgetButtonLabel,
+                                $widgetButtonLink,
+                                $widgetButtonClass,
+                                $linkMethod,
+                                $bodyClass,
+                                $widgetAuth,
+                                $fixedWidth
+                            );
+                            ?>
                                             <br/>
                                             <div style='margin-left:10px' class='text'><img src='../../pic/ajax-loader.gif'/></div><br/>
                                         </div>
@@ -1203,29 +1191,29 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                         <?php if (acl_check('patients', 'disclosure')) { ?>
                                <tr>
                                <td width='650px'>
-                        <?php
+                            <?php
                         // disclosures expand collapse widget
-                        $widgetTitle = xl("Disclosures");
-                        $widgetLabel = "disclosures";
-                        $widgetButtonLabel = xl("Edit");
-                        $widgetButtonLink = "disclosure_full.php";
-                        $widgetButtonClass = "";
-                        $linkMethod = "html";
-                        $bodyClass = "notab";
-                        $widgetAuth = acl_check('patients', 'disclosure', '', 'write');
-                        $fixedWidth = true;
-                        expand_collapse_widget(
-                            $widgetTitle,
-                            $widgetLabel,
-                            $widgetButtonLabel,
-                            $widgetButtonLink,
-                            $widgetButtonClass,
-                            $linkMethod,
-                            $bodyClass,
-                            $widgetAuth,
-                            $fixedWidth
-                        );
-                        ?>
+                            $widgetTitle = xl("Disclosures");
+                            $widgetLabel = "disclosures";
+                            $widgetButtonLabel = xl("Edit");
+                            $widgetButtonLink = "disclosure_full.php";
+                            $widgetButtonClass = "";
+                            $linkMethod = "html";
+                            $bodyClass = "notab";
+                            $widgetAuth = acl_check('patients', 'disclosure', '', 'write');
+                            $fixedWidth = true;
+                            expand_collapse_widget(
+                                $widgetTitle,
+                                $widgetLabel,
+                                $widgetButtonLabel,
+                                $widgetButtonLink,
+                                $widgetButtonClass,
+                                $linkMethod,
+                                $bodyClass,
+                                $widgetAuth,
+                                $fixedWidth
+                            );
+                            ?>
                                             <br/>
                                             <div style='margin-left:10px' class='text'><img src='../../pic/ajax-loader.gif'/></div><br/>
                                         </div>
@@ -1252,7 +1240,7 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
 
                                 if (sqlNumRows($result) == 0) {
                                         echo " <table><tr>\n";
-                                        echo "  <td colspan='" . attr($numcols) . "' class='text'>&nbsp;&nbsp;" . xlt('None') . "</td>\n";
+                                        echo "  <td colspan='" . attr($numcols) . "' class='text'>&nbsp;&nbsp;" . xlt('None{{Amendment}}') . "</td>\n";
                                         echo " </tr></table>\n";
                                 }
 
@@ -1270,40 +1258,40 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                         <?php if (acl_check('patients', 'lab')) { ?>
                             <tr>
                              <td width='650px'>
-                        <?php // labdata expand collapse widget
-                          $widgetTitle = xl("Labs");
-                          $widgetLabel = "labdata";
-                          $widgetButtonLabel = xl("Trend");
-                          $widgetButtonLink = "../summary/labdata.php";#"../encounter/trend_form.php?formname=labdata";
-                          $widgetButtonClass = "";
-                          $linkMethod = "html";
-                          $bodyClass = "notab";
+                            <?php // labdata expand collapse widget
+                            $widgetTitle = xl("Labs");
+                            $widgetLabel = "labdata";
+                            $widgetButtonLabel = xl("Trend");
+                            $widgetButtonLink = "../summary/labdata.php";#"../encounter/trend_form.php?formname=labdata";
+                            $widgetButtonClass = "";
+                            $linkMethod = "html";
+                            $bodyClass = "notab";
                           // check to see if any labdata exist
-                          $spruch = "SELECT procedure_report.date_collected AS date " .
+                            $spruch = "SELECT procedure_report.date_collected AS date " .
                                     "FROM procedure_report " .
                                     "JOIN procedure_order ON  procedure_report.procedure_order_id = procedure_order.procedure_order_id " .
                                     "WHERE procedure_order.patient_id = ? " .
                                     "ORDER BY procedure_report.date_collected DESC ";
-                          $existLabdata = sqlQuery($spruch, array($pid));
-                        if ($existLabdata) {
-                            $widgetAuth = true;
-                        } else {
-                            $widgetAuth = false;
-                        }
+                            $existLabdata = sqlQuery($spruch, array($pid));
+                            if ($existLabdata) {
+                                $widgetAuth = true;
+                            } else {
+                                $widgetAuth = false;
+                            }
 
-                          $fixedWidth = true;
-                          expand_collapse_widget(
-                              $widgetTitle,
-                              $widgetLabel,
-                              $widgetButtonLabel,
-                              $widgetButtonLink,
-                              $widgetButtonClass,
-                              $linkMethod,
-                              $bodyClass,
-                              $widgetAuth,
-                              $fixedWidth
-                          );
-                        ?>
+                            $fixedWidth = true;
+                            expand_collapse_widget(
+                                $widgetTitle,
+                                $widgetLabel,
+                                $widgetButtonLabel,
+                                $widgetButtonLink,
+                                $widgetButtonClass,
+                                $linkMethod,
+                                $bodyClass,
+                                $widgetAuth,
+                                $fixedWidth
+                            );
+                            ?>
                               <br/>
                               <div style='margin-left:10px' class='text'><img src='../../pic/ajax-loader.gif'/></div><br/>
                               </div>
@@ -1314,35 +1302,35 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                         <?php if ($vitals_is_registered && acl_check('patients', 'med')) { ?>
                             <tr>
                              <td width='650px'>
-                        <?php // vitals expand collapse widget
-                          $widgetTitle = xl("Vitals");
-                          $widgetLabel = "vitals";
-                          $widgetButtonLabel = xl("Trend");
-                          $widgetButtonLink = "../encounter/trend_form.php?formname=vitals";
-                          $widgetButtonClass = "";
-                          $linkMethod = "html";
-                          $bodyClass = "notab";
+                            <?php // vitals expand collapse widget
+                            $widgetTitle = xl("Vitals");
+                            $widgetLabel = "vitals";
+                            $widgetButtonLabel = xl("Trend");
+                            $widgetButtonLink = "../encounter/trend_form.php?formname=vitals";
+                            $widgetButtonClass = "";
+                            $linkMethod = "html";
+                            $bodyClass = "notab";
                           // check to see if any vitals exist
-                          $existVitals = sqlQuery("SELECT * FROM form_vitals WHERE pid=?", array($pid));
-                        if ($existVitals) {
-                            $widgetAuth = true;
-                        } else {
-                            $widgetAuth = false;
-                        }
+                            $existVitals = sqlQuery("SELECT * FROM form_vitals WHERE pid=?", array($pid));
+                            if ($existVitals) {
+                                $widgetAuth = true;
+                            } else {
+                                $widgetAuth = false;
+                            }
 
-                          $fixedWidth = true;
-                          expand_collapse_widget(
-                              $widgetTitle,
-                              $widgetLabel,
-                              $widgetButtonLabel,
-                              $widgetButtonLink,
-                              $widgetButtonClass,
-                              $linkMethod,
-                              $bodyClass,
-                              $widgetAuth,
-                              $fixedWidth
-                          );
-                        ?>
+                            $fixedWidth = true;
+                            expand_collapse_widget(
+                                $widgetTitle,
+                                $widgetLabel,
+                                $widgetButtonLabel,
+                                $widgetButtonLink,
+                                $widgetButtonClass,
+                                $linkMethod,
+                                $bodyClass,
+                                $widgetAuth,
+                                $fixedWidth
+                            );
+                            ?>
                               <br/>
                               <div style='margin-left:10px' class='text'><img src='../../pic/ajax-loader.gif'/></div><br/>
                               </div>
@@ -1405,7 +1393,7 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                               </div> <!-- This is required by expand_collapse_widget(). -->
                              </td>
                             </tr>
-                        <?php
+                            <?php
                         } // end while
                         ?>
 
@@ -1443,18 +1431,18 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                             $widgetAuth,
                             $fixedWidth
                         );
-                ?>
+                        ?>
                 <br />
-                <?php
-                if ($idcard_doc_id) {
-                    image_widget($idcard_doc_id, $GLOBALS['patient_id_category_name']);
-                }
+                        <?php
+                        if ($idcard_doc_id) {
+                            image_widget($idcard_doc_id, $GLOBALS['patient_id_category_name']);
+                        }
 
-                foreach ($photos as $photo_doc_id) {
-                    image_widget($photo_doc_id, $GLOBALS['patient_photo_category_name']);
-                }
+                        foreach ($photos as $photo_doc_id) {
+                            image_widget($photo_doc_id, $GLOBALS['patient_photo_category_name']);
+                        }
                     }
-                ?>
+                    ?>
 
                 <br />
                 </div>
@@ -1511,10 +1499,10 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                         }
 
                         if (!$counterFlag) {
-                            echo "&nbsp;&nbsp;" . xlt('None');
+                            echo "&nbsp;&nbsp;" . xlt('None{{Advanced_Directives}}');
                         } ?>
                       </div>
-                    <?php
+                        <?php
                     }  // close advanced dir block
 
                     // Show Clinical Reminders for any user that has rules that are permitted.
@@ -1772,7 +1760,7 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                          $recurrences = fetchRecurrences($pid);
                         if (empty($recurrences)) { //if there are no recurrent appointments:
                             echo "<div>";
-                            echo "<span>" . "&nbsp;&nbsp;" . xlt('None') . "</span>";
+                            echo "<span>" . "&nbsp;&nbsp;" . xlt('None{{Appointment}}') . "</span>";
                             echo "</div></div>";
                         } else {
                             foreach ($recurrences as $row) {
@@ -1850,11 +1838,12 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                                 }
                             }
 
+                            $petitle = xl('(Click to edit)');
                             if ($row['pc_hometext'] != "") {
-                                $etitle = xl('Comments').": ".($row['pc_hometext'])."\r\n".$etitle;
+                                $petitle = xl('Comments').": ".($row['pc_hometext'])."\r\n".$petitle;
                             }
 
-                            echo "<a href='javascript:oldEvt(" . attr_js(preg_replace("/-/", "", $row['pc_eventDate'])) . ', ' . attr_js($row['pc_eid']) . ")' title='" . attr($etitle) . "'>";
+                            echo "<a href='javascript:oldEvt(" . attr_js(preg_replace("/-/", "", $row['pc_eventDate'])) . ', ' . attr_js($row['pc_eid']) . ")' title='" . attr($petitle) . "'>";
                             echo "<b>" . text(xl($dayname) . ", " . oeFormatShortDate($row['pc_eventDate'])) . "</b> " . xlt("Status") .  "(";
                             echo " " .  generate_display_field(array('data_type'=>'1','list_id'=>'apptstat'), $row['pc_apptstatus']) . ")<br>";   // can't use special char parser on this
                             echo text("$disphour:$dispmin ") . xlt($dispampm) . " ";
@@ -1863,7 +1852,7 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
 
                         if (isset($pres) && $res != null) {
                             if ($count < 1) {
-                                echo "&nbsp;&nbsp;" . xlt('None');
+                                echo "&nbsp;&nbsp;" . xlt('None{{Appointment}}');
                             }
 
                             echo "</div>";
@@ -1871,7 +1860,7 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                     }
 
                     // END of past appointments
-                ?>
+                    ?>
                         </div>
 
                         <div id='stats_div'>
@@ -1917,7 +1906,7 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                                     $widgetAuth,
                                     $fixedWidth
                                 );
-                        ?>
+                                ?>
                       <br/>
                       <div style='margin-left:10px' class='text'><img src='../../pic/ajax-loader.gif'/></div><br/>
                       <!--</div>-->

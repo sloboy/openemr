@@ -15,8 +15,8 @@
  */
 
 // Checks if the server's PHP version is compatible with OpenEMR:
-require_once(dirname(__FILE__) . "/common/compatibility/Checker.php");
-$response = OpenEMR\Common\Checker::checkPhpVersion();
+require_once(dirname(__FILE__) . "/src/Common/Compatibility/Checker.php");
+$response = OpenEMR\Common\Compatibility\Checker::checkPhpVersion();
 if ($response !== true) {
     die(htmlspecialchars($response));
 }
@@ -94,9 +94,12 @@ function recursive_writable_directory_test($dir)
 // Bring in standard libraries/classes
 require_once dirname(__FILE__) ."/vendor/autoload.php";
 
-$COMMAND_LINE = php_sapi_name() == 'cli';
 require_once(dirname(__FILE__) . '/library/authentication/password_hashing.php');
 require_once dirname(__FILE__) . '/library/classes/Installer.class.php';
+
+use OpenEMR\Common\Utils\RandomGenUtils;
+
+$COMMAND_LINE = php_sapi_name() == 'cli';
 
 $state = isset($_POST["state"]) ? ($_POST["state"]) : '';
 $installer = new Installer($_REQUEST);
@@ -206,12 +209,10 @@ global $OE_SITE_DIR; // The Installer sets this
 
 $docsDirectory = "$OE_SITE_DIR/documents";
 
-$zendModuleConfigFile = dirname(__FILE__)."/interface/modules/zend_modules/config/application.config.php";
-
 //These are files and dir checked before install for
 // correct permissions.
 if (is_dir($OE_SITE_DIR)) {
-    $writableFileList = array($installer->conffile,$zendModuleConfigFile);
+    $writableFileList = array($installer->conffile);
     $writableDirList = array($docsDirectory);
 } else {
     $writableFileList = array();
@@ -303,6 +304,10 @@ if (file_exists($OE_SITE_DIR)) {
         background-color:  WHITESMOKE;
         padding:0 10px;
     }
+    .oe-margin-b-5 {
+        margin-bottom: 5px;
+
+    }
     button {
     font-weight:bold;
     }
@@ -374,7 +379,7 @@ function cloneClicked() {
 
             <?php
             if ($state == 8) {
-            ?>
+                ?>
 
             <fieldset>
             <legend>Final step - Success</legend>
@@ -390,40 +395,40 @@ function cloneClicked() {
                 <li>To ensure a consistent look and feel throughout the application,
                     <a href='http://www.mozilla.org/products/firefox/'>Firefox</a> and <a href="https://www.google.com/chrome/browser/desktop/index.html">Chrome</a> are recommended. The OpenEMR development team exclusively tests with modern versions of these browsers.</li>
                 <li>The OpenEMR project home page, documentation, and forums can be found at <a href = "https://www.open-emr.org" rel='noopener' target="_blank">https://www.open-emr.org</a></li>
-                <li>We pursue grants to help fund the future development of OpenEMR.  To apply for these grants, we need to estimate how many times this program is installed and how many practices are evaluating or using this software.  It would be awesome if you would email us at <a href="mailto:president@oemr.org">president@oemr.org</a> if you have installed this software. The more details about your plans with this software, the better, but even just sending us an email stating you just installed it is very helpful.</li>
+                <li>We pursue grants to help fund the future development of OpenEMR.  To apply for these grants, we need to estimate how many times this program is installed and how many practices are evaluating or using this software.  It would be awesome if you would email us at <a href="mailto:hello@open-emr.org">hello@open-emr.org</a> if you have installed this software. The more details about your plans with this software, the better, but even just sending us an email stating you just installed it is very helpful.</li>
             </ul>
             <p>We recommend you print these instructions for future reference.</p>
-            <?php
-            echo "<p> The selected theme is :</p>";
+                <?php
+                echo "<p> The selected theme is :</p>";
                 $installer->displayNewThemeDiv();
-            if (empty($installer->clone_database)) {
-                echo "<p><b>The initial OpenEMR user is <span class='text-primary'>'".$installer->iuser."'</span> and the password is <span class='text-primary'>'".$installer->iuserpass."'</span></b></p>";
-            } else {
-                echo "<p>The initial OpenEMR user name and password is the same as that of source site <b>'". $installer->source_site_id ."'</span></b></p>";
-            }
-            echo "<p>If you edited the PHP or Apache configuration files during this installation process, then we recommend you restart your Apache server before following below OpenEMR link.</p>";
-            echo "<p>In Linux use the following command:</p>";
-            echo "<p><code>sudo apachectl -k restart</code></p>";
+                if (empty($installer->clone_database)) {
+                    echo "<p><b>The initial OpenEMR user is <span class='text-primary'>'".$installer->iuser."'</span> and the password is <span class='text-primary'>'".$installer->iuserpass."'</span></b></p>";
+                } else {
+                    echo "<p>The initial OpenEMR user name and password is the same as that of source site <b>'". $installer->source_site_id ."'</span></b></p>";
+                }
+                echo "<p>If you edited the PHP or Apache configuration files during this installation process, then we recommend you restart your Apache server before following below OpenEMR link.</p>";
+                echo "<p>In Linux use the following command:</p>";
+                echo "<p><code>sudo apachectl -k restart</code></p>";
 
-            ?>
+                ?>
             <p>
              <a href='./?site=<?php echo $site_id; ?>'>Click here to start using OpenEMR. </a>
             </p>
             </fieldset>
-            <?php
-            $installer->setCurrentTheme();
+                <?php
+                $installer->setCurrentTheme();
 
-            $end_div = <<<ENDDIV
+                $end_div = <<<ENDDIV
             </div>
         </div>
     </div><!--end of container div-->
 ENDDIV;
-            echo $end_div . "\r\n";
-            $installer->setupHelpModal();
-            echo "</body>". "\r\n";
-            echo "</html>". "\r\n";
+                echo $end_div . "\r\n";
+                $installer->setupHelpModal();
+                echo "</body>". "\r\n";
+                echo "</html>". "\r\n";
 
-            exit();
+                exit();
             }
             ?>
 
@@ -553,12 +558,12 @@ STP2TOP;
                                             <label class="control-label" for="pass">Password:</label> <a href="#pass_info"  class="info-anchor icon-tooltip"  data-toggle="collapse" ><i class="fa fa-question-circle" aria-hidden="true"></i></a>
                                         </div>
                                         <div>
-                                            <input name='pass' id='pass' class='form-control' type='password' value='' minlength='12' required>
+                                            <input name='pass' id='pass' class='form-control' type='password' value='' required>
                                         </div>
                                     </div>
                                     <div id="pass_info" class="collapse">
                                         <a href="#pass_info" data-toggle="collapse" class="oe-pull-away"><i class="fa fa-times oe-help-x" aria-hidden="true"></i></a>
-                                        <p>This is the Login Password that OpemEMR will use to accesses the MySQL database.
+                                        <p>This is the Login Password that OpenEMR will use to accesses the MySQL database.
                                         <p>It should be at least 12 characters long and composed of both numbers and letters.
                                     </div>
                                 </div>
@@ -598,7 +603,6 @@ STP2TBLTOP1;
                                     <div id="rootpass_info" class="collapse">
                                         <a href="#rootpass_info" data-toggle="collapse" class="oe-pull-away"><i class="fa fa-times oe-help-x" aria-hidden="true"></i></a>
                                         <p>This is your MySQL server root password.
-                                        <p>For localhost, it is usually ok to leave it blank.
                                         </div>
                                 </div>
                                 <div class="col-sm-4">
@@ -794,15 +798,17 @@ SOURCESITEBOT;
                             echo $source_site_bot ."\r\n";
                         }
 
-                        $randomusername = chr(rand(65, 90)) . chr(rand(65, 90)) . chr(rand(65, 90)) . "-admin-" . rand(0, 9) . rand(0, 9);
+                        $randomusernamepre = RandomGenUtils::produceRandomString(3, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+                        $randomusernamepost = RandomGenUtils::produceRandomString(2, "0123456789");
+                        $randomusername = $randomusernamepre . "-admin-" . $randomusernamepost;
 
                         // App Based TOTP secret
                         // Shared key (per rfc6238 and rfc4226) should be 20 bytes (160 bits) and encoded in base32, which should
                         //   be 32 characters in base32
-                        // Would be nice to use the produceRandomBytes() function and then encode to base32, but does not appear
-                        //   to be a standard way to encode binary to base32 in php.
-                        $randomsecret = produceRandomString(32, "234567ABCDEFGHIJKLMNOPQRSTUVWXYZ");
-                        if (empty($randomsecret)) {
+                        // Would be nice to use the OpenEMR\Common\Utils\RandomGenUtils\produceRandomBytes() function and then encode to base32,
+                        //   but does not appear to be a standard way to encode binary to base32 in php.
+                        $randomsecret = RandomGenUtils::produceRandomString(32, "234567ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+                        if (empty($randomsecret) || empty($randomusernamepre) || empty($randomusernamepost)) {
                             error_log('OpenEMR Error : Random String error - exiting');
                             die();
                         }
@@ -898,46 +904,52 @@ SOURCESITEBOT;
                                         <p>This should be the name of your practice.
                                     </div>
                                 </div>
-                                <div class="col-sm-4">
+                            </div>
+                        </div>
+                    </fieldset>
+					<br>
+                    <fieldset class='noclone bg-danger oe-margin-b-5'>
+                        <legend name="form_legend" id="form_legend" class='oe-setup-legend text-danger'>Enable 2 Factor Authentication for Initial User (more secure - optional) <i id="2fa-section" class="fa fa-info-circle oe-text-black oe-superscript 2fa-section-tooltip" aria-hidden="true"></i></legend>
+                       
+                        <div class="row">
+                            <div class="col-xs-12 ">
+                                <div class="col-sm-3">
                                     <div class="clearfix form-group">
                                         <div class="label-div">
                                             <label class="control-label" for="i2fa">Configure 2FA:</label> <a href="#i2fa_info"  class="info-anchor icon-tooltip"  data-toggle="collapse" ><i class="fa fa-question-circle" aria-hidden="true"></i></a>
                                         </div>
                                         <div>
-                                            <table>
-                                                <tr>
-                                                    <td><p><input name='i2faenable' id='i2faenable' type='checkbox' $disableCheckbox/> Enable 2FA</p></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>
-                                                        <strong><font color='RED'>IMPORTANT IF ENABLED</font></strong>
-                                                        <p><strong>If enabled, you must have an authenticator app on your phone ready to scan the QR code displayed next.</strong></p>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td>
-                                                        Example authenticator apps include:
-                                                        <ul>
-                                                            <li>Google Auth
-                                                                (<a href="https://itunes.apple.com/us/app/google-authenticator/id388497605?mt=8">ios</a>, <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&hl=en">android</a>)</li>
-                                                            <li>Authy
-                                                                (<a href="https://itunes.apple.com/us/app/authy/id494168017?mt=8">ios</a>, <a href="https://play.google.com/store/apps/details?id=com.authy.authy&hl=en">android</a>)</li>
-                                                        </ul>
-                                                    </td>
-                                                </tr>
-                                            </table>
-                                            <input type='hidden' name='i2fasecret' id='i2fasecret' value='$randomsecret' />
+                                        <input name='i2faenable' id='i2faenable' type='checkbox' $disableCheckbox/> Enable 2FA
+                                        <input type='hidden' name='i2fasecret' id='i2fasecret' value='$randomsecret' />
                                         </div>
                                     </div>
                                     <div id="i2fa_info" class="collapse">
                                         <a href="#i2fa_info" data-toggle="collapse" class="oe-pull-away"><i class="fa fa-times oe-help-x" aria-hidden="true"></i></a>
-                                        <p>This is 2-Factored Authentication that will make your version of OpenEMR more secure.</p>
+                                        <p>If selected will allow TOTP 2 factor authentication for the initial user.</p>
+										<p>Click on the help file for more information.</p>
                                     </div>
-                                </div>                                
-							</div>
+                                </div>
+                                <div class="col-sm-5">
+                                    <div class="clearfix form-group">
+                                        <p class="text-danger"><b>IMPORTANT IF ENABLED</b></p>
+                                        <p>If enabled, you must have an authenticator app on your phone ready to scan the QR code displayed next.</p>
+									</div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <div class="clearfix form-group">
+                                        <p>Example authenticator apps include:</p>
+                                        <ul>
+                                            <li>Google Auth
+                                                (<a href="https://itunes.apple.com/us/app/google-authenticator/id388497605?mt=8" target="_blank">ios</a>, <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&amp;hl=en">android</a>)</li>
+                                            <li>Authy
+                                                (<a href="https://itunes.apple.com/us/app/authy/id494168017?mt=8">ios</a>, <a href="https://play.google.com/store/apps/details?id=com.authy.authy&amp;hl=en">android</a>)</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </fieldset>
-                            <p class='bg-warning'>Click the <b>Create DB and User</b> button to create the database and first user. $note: This process will take a few minutes.</p>
+                            <p class='bg-warning'>Click the <b>Create DB and User</b> button below to create the database and first user <a href='#create_db_button' title='Click me'><i class="fa fa-arrow-circle-down" aria-hidden="true"></i></a>. $note: This process will take a few minutes.</p>
                             <!--<p class='bg-success'>Upon successful completion will automatically take you to the next step.</p>-->
                              <p class='bg-success oe-spinner' style = 'visibility:hidden;'>Upon successful completion will automatically take you to the next step.<i class='fa fa-spinner fa-pulse fa-fw'></i></p>
                             <button type='submit' id='create_db_button' value='Continue' class='wait'><b>Create DB and User</b></button>
@@ -1307,6 +1319,7 @@ STP5TOP;
                         $max_input_time = ini_get('max_input_time');
                         $post_max_size = ini_get('post_max_size');
                         $memory_limit = ini_get('memory_limit');
+                        $mysqli_allow_local_infile = ini_get('mysqli.allow_local_infile')?'On':'Off';
 
                         $step5_table = <<<STP5TAB
                             <li>To ensure proper functioning of OpenEMR you must make sure that PHP settings include:
@@ -1355,6 +1368,11 @@ STP5TOP;
                                         <td>memory_limit</td>
                                         <td>at least 256M</td>
                                         <td>$memory_limit</td>
+                                    </tr>
+                                    <tr>
+                                        <td>mysqli.allow_local_infile</td>
+                                        <td>On</td>
+                                        <td>$mysqli_allow_local_infile</td>
                                     </tr>
                                 </table>
                             </li>
@@ -1496,7 +1514,7 @@ TOP;
                                     echo $top;
                         if ($checkPermissions) {
                             echo "<p>We will now ensure correct file and directory permissions before starting installation:</p>\n";
-                            echo "<FONT COLOR='green'>Ensuring following files are world-writable...</FONT><br>\n";
+                            echo "<FONT COLOR='green'>Ensuring following file is world-writable...</FONT><br>\n";
                             $errorWritable = 0;
                             foreach ($writableFileList as $tempFile) {
                                 if (is_writable($tempFile)) {
@@ -1568,14 +1586,14 @@ FRM;
                             </div>
 BOT;
                         echo $bot ."\r\n";
-                        ?>
+            ?>
 
 
     </div><!--end of container div -->
     <?php $installer->setupHelpModal();?>
     <script>
         //jquery-ui tooltip
-        $(document).ready(function() {
+        $(function() {
             $('.icon-tooltip').prop( "title", "Click to see more information").tooltip({
                 show: {
                     delay: 700,
@@ -1583,11 +1601,13 @@ BOT;
                 }
             });
             $('.enter-details-tooltip').prop( "title", "Additional help to fill out this form is available by hovering over labels of each box and clicking on the dark blue help ? icon that is revealed. On mobile devices tap once on the label to reveal the help icon and tap on the icon to show the help section").tooltip();
+            $('.2fa-section-tooltip').prop( "title", "Two factor authentication prevents unauthorized access to openEMR thus improves security. It is optional. More information is available in the help file under Step 2 Database and OpenEMR Initial User Setup Details.").tooltip();
+
 
         });
     </script>
     <script type = "text/javascript" >
-        $(document).ready(function() {
+        $(function() {
             $("input[type='radio']").click(function() {
                 var radioValue = $("input[name='stylesheet']:checked").val();
                 var imgPath = "public/images/stylesheets/";
@@ -1632,7 +1652,7 @@ BOT;
 
             $( "#create_db_button" ).hover(
                 function() {
-                    if (($('#pass' ).val().length > 11 && $('#iuserpass' ).val().length > 11 && $('#iuser' ).val().length > 11 ) || ($('#clone_database').prop('checked') && $('#pass' ).val().length > 11)){
+                    if (($('#iuserpass' ).val().length > 11 && $('#iuser' ).val().length > 11 ) || ($('#clone_database').prop('checked'))){
 
                         $("button").click(function(){
                            $(".oe-spinner").css("visibility", "visible");

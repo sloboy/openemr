@@ -6,6 +6,10 @@
  * @link      http://www.open-emr.org
  * @author    Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2017-2018 Brady Miller <brady.g.miller@gmail.com>
+ * @author    Stephen Nielson <stephen@nielson.org>
+ * @copyright Copyright (c) 2019 Stephen Nielson <stephen@nielson.org>
+ * @author    Jerry Padgett <sjpadgett@gmail.com>
+ * @copyright Copyright (c) 2019 Jerry Padgett <sjpadgett@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
@@ -16,9 +20,15 @@ require_once("$srcdir/forms.inc");
 require_once("$srcdir/patient.inc");
 
 use OpenEMR\Core\Header;
+use OpenEMR\Events\PatientReport\PatientReportEvent;
 use OpenEMR\Menu\PatientMenuRole;
 use OpenEMR\OeUI\OemrUI;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\EventDispatcher\GenericEvent;
 
+if (!acl_check('patients', 'pat_rep')) {
+    die(xlt('Not authorized'));
+}
 // get various authorization levels
 $auth_notes_a  = acl_check('encounters', 'notes_a');
 $auth_notes    = acl_check('encounters', 'notes');
@@ -27,6 +37,12 @@ $auth_coding   = acl_check('encounters', 'coding');
 $auth_relaxed  = acl_check('encounters', 'relaxed');
 $auth_med      = acl_check('patients', 'med');
 $auth_demo     = acl_check('patients', 'demo');
+
+$oefax = !empty($GLOBALS['oefax_enable']) ? $GLOBALS['oefax_enable'] : 0;
+/**
+ * @var EventDispatcherInterface $eventDispatcher  The event dispatcher / listener object
+ */
+$eventDispatcher = $GLOBALS['kernel']->getEventDispatcher();
 
 $cmsportal = false;
 if ($GLOBALS['gbl_portal_cms_enable']) {
@@ -155,7 +171,7 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                                         </tr>
                                     </table>
                                 </div>
-                            <?php
+                                <?php
                             } ?>
 
                         </div>
@@ -190,14 +206,14 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                                     </tr>
                                 </table>
                             </div>
-                        <?php
+                            <?php
                         } ?>
                         </div>
                     </fieldset>
                 </form>
                 <hr/>
             </div>
-        <?php
+            <?php
         } // end CCR/CCD reporting options ?>
 
         <form name='report_form' id="report_form" method='post' action='custom_report.php'>
@@ -253,9 +269,14 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
             <br>
             <button type="button" class="genreport btn btn-default btn-save btn-sm" value="<?php echo xla('Generate Report'); ?>" ><?php echo xlt('Generate Report'); ?></button>
             <button type="button" class="genpdfrep btn btn-default btn-download btn-sm" value="<?php echo xla('Download PDF'); ?>" ><?php echo xlt('Download PDF'); ?></button>
-            <?php if ($cmsportal) { ?>
+                <?php if ($cmsportal) { ?>
             <button type="button" class="genportal btn btn-default btn-send-msg btn-sm" value="<?php echo xla('Send to Portal'); ?>" ><?php echo xlt('Send to Portal'); ?></button>
             <?php } ?>
+            <?php
+            if ($oefax) {
+                $eventDispatcher->dispatch(PatientReportEvent::ACTIONS_RENDER_POST, new GenericEvent());
+            }
+            ?>
             <input type='hidden' name='pdf' value='0'>
             <br>
 
@@ -344,7 +365,7 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                         <?php
                         if (!($auth_notes_a || $auth_notes || $auth_coding_a || $auth_coding || $auth_med || $auth_relaxed)) { ?>
                             (Encounters not authorized)
-                        <?php
+                            <?php
                         } else { ?>
                             <?php
                             $isfirst = 1;
@@ -364,7 +385,7 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                             }
 
                             while ($result = sqlFetchArray($res)) {
-                                if ($result{"form_name"} == "New Patient Encounter") {
+                                if ($result["form_name"] == "New Patient Encounter") {
                                     if ($isfirst == 0) {
                                         foreach ($registry_form_name as $var) {
                                             if ($toprint = $html_strings[$var]) {
@@ -381,9 +402,9 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                                     $isfirst = 0;
                                     echo "<div class='encounter_data'>\n";
                                     echo "<input type=checkbox ".
-                                    " name='" . attr($result{"formdir"}) . "_" .  attr($result{"form_id"}) . "'".
-                                    " id='" . attr($result{"formdir"}) . "_" .  attr($result{"form_id"}) . "'".
-                                    " value='" . attr($result{"encounter"}) . "'" .
+                                    " name='" . attr($result["formdir"]) . "_" .  attr($result["form_id"]) . "'".
+                                    " id='" . attr($result["formdir"]) . "_" .  attr($result["form_id"]) . "'".
+                                    " value='" . attr($result["encounter"]) . "'" .
                                     " class='encounter'".
                                     " >";
                                     // show encounter reason, not just 'New Encounter'
@@ -393,12 +414,12 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                                         // The default encoding for this mb_substr() call is set near top of globals.php
                                         $result['reason'] = mb_substr($result['reason'], 0, $maxReasonLength) . " ... ";
                                     }
-                                    echo text($result{"reason"}) .
-                                    " (" . text(date("Y-m-d", strtotime($result{"date"}))) .
+                                    echo text($result["reason"]) .
+                                    " (" . text(date("Y-m-d", strtotime($result["date"]))) .
                                     ")\n";
                                     echo "<div class='encounter_forms'>\n";
                                 } else {
-                                    $form_name = trim($result{"form_name"});
+                                    $form_name = trim($result["form_name"]);
                                     //if form name is not in registry, look for the closest match by
                                     // finding a registry name which is  at the start of the form name.
                                     //this is to allow for forms to put additional helpful information
@@ -422,11 +443,11 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                                         $html_strings[$form_name] = array();
                                     }
                                     array_push($html_strings[$form_name], "<input type='checkbox' ".
-                                        " name='" . attr($result{"formdir"}) . "_" . attr($result{"form_id"}) . "'".
-                                        " id='" . attr($result{"formdir"}) . "_" . attr($result{"form_id"}) . "'".
-                                        " value='" . attr($result{"encounter"}) . "'" .
+                                        " name='" . attr($result["formdir"]) . "_" . attr($result["form_id"]) . "'".
+                                        " id='" . attr($result["formdir"]) . "_" . attr($result["form_id"]) . "'".
+                                        " value='" . attr($result["encounter"]) . "'" .
                                         " class='encounter_form' ".
-                                        ">" . text(xl_form_title($result{"form_name"})) . "<br>\n");
+                                        ">" . text(xl_form_title($result["form_name"])) . "<br>\n");
                                 }
                             }
 
@@ -439,7 +460,7 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                             }
                             ?>
 
-                        <?php
+                            <?php
                         } ?>
                                 </div> <!-- end encounters DIV -->
                     </td>
@@ -531,7 +552,7 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                 <?php
                 if ($cmsportal) { ?>
                     <button type="button" class="genportal btn btn-default btn-send-msg btn-sm" value="<?php echo xla('Send to Portal'); ?>" ><?php echo xlt('Send to Portal'); ?></button>
-                <?php
+                    <?php
                 } ?>
             </div>
             </div>
@@ -735,6 +756,12 @@ if ($GLOBALS['phimail_enable']==true && $GLOBALS['phimail_ccd_enable']==true) { 
                 }
         });
 <?php } ?>
+
+    <?php
+    if ($oefax) {
+        $eventDispatcher->dispatch(PatientReportEvent::JAVASCRIPT_READY_POST, new GenericEvent());
+    }
+    ?>
 
 });
 

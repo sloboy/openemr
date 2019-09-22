@@ -15,19 +15,24 @@
 require_once("../globals.php");
 require_once($GLOBALS['srcdir'] . "/patient.inc");
 
+use OpenEMR\Common\Crypto\CryptoGen;
+use OpenEMR\Common\Csrf\CsrfUtils;
 use OpenEMR\Core\Header;
+
+// Set up crypto object
+$cryptoGen = new CryptoGen();
 
 $template_dir = $GLOBALS['OE_SITE_DIR'] . "/documents/letter_templates";
 
 if (!empty($_POST)) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
+    if (!CsrfUtils::verifyCsrfToken($_POST["csrf_token_form"])) {
+        CsrfUtils::csrfNotVerified();
     }
 }
 
 if (!empty($_GET)) {
-    if (!verifyCsrfToken($_GET["csrf_token_form"])) {
-        csrfNotVerified();
+    if (!CsrfUtils::verifyCsrfToken($_GET["csrf_token_form"])) {
+        CsrfUtils::csrfNotVerified();
     }
 }
 
@@ -112,7 +117,7 @@ if ($_POST['formaction']=="generate") {
     }
 
     if ($GLOBALS['drive_encryption']) {
-        $temp_bodytext = encryptStandard($temp_bodytext, null, 'database');
+        $temp_bodytext = $cryptoGen->encryptStandard($temp_bodytext, null, 'database');
     }
 
     if (! fwrite($fh, $temp_bodytext)) {
@@ -207,17 +212,17 @@ if ($_POST['formaction']=="generate") {
     </head>
         <body>
     <div class='paddingdiv'>
-    <?php echo $cpstring; ?>
+        <?php echo $cpstring; ?>
         <div class="navigate">
-    <a href='<?php echo $GLOBALS['rootdir'] . '/patient_file/letter.php?template=autosaved&csrf_token_form=' . attr_url(collectCsrfToken()); ?>' onclick='top.restoreSession()'>(<?php echo xlt('Back'); ?>)</a>
+    <a href='<?php echo $GLOBALS['rootdir'] . '/patient_file/letter.php?template=autosaved&csrf_token_form=' . attr_url(CsrfUtils::collectCsrfToken()); ?>' onclick='top.restoreSession()'>(<?php echo xlt('Back'); ?>)</a>
     </div>
     <script language='JavaScript'>
     window.print();
     </script>
     </body>
     </div>
-    <?php
-    exit;
+        <?php
+        exit;
     }
 } else if (isset($_GET['template']) && $_GET['template'] != "") {
     // utilized to go back to autosaved template
@@ -234,8 +239,8 @@ if ($_POST['formaction']=="generate") {
 
     fclose($fh);
 
-    if (cryptCheckStandard($bodytext)) {
-        $bodytext = decryptStandard($bodytext, null, 'database');
+    if ($cryptoGen->cryptCheckStandard($bodytext)) {
+        $bodytext = $cryptoGen->decryptStandard($bodytext, null, 'database');
     }
 
     // translate from constant to the definition
@@ -256,8 +261,8 @@ if ($_POST['formaction']=="generate") {
 
     fclose($fh);
 
-    if (cryptCheckStandard($bodytext)) {
-        $bodytext = decryptStandard($bodytext, null, 'database');
+    if ($cryptoGen->cryptCheckStandard($bodytext)) {
+        $bodytext = $cryptoGen->decryptStandard($bodytext, null, 'database');
     }
 
     // translate from constant to the definition
@@ -274,7 +279,7 @@ if ($_POST['formaction']=="generate") {
     }
 
     if ($GLOBALS['drive_encryption']) {
-        $temp_bodytext = encryptStandard($temp_bodytext, null, 'database');
+        $temp_bodytext = $cryptoGen->encryptStandard($temp_bodytext, null, 'database');
     }
 
     if (! fwrite($fh, $temp_bodytext)) {
@@ -298,8 +303,8 @@ if ($_POST['formaction']=="generate") {
 
     fclose($fh);
 
-    if (cryptCheckStandard($bodytext)) {
-        $bodytext = decryptStandard($bodytext, null, 'database');
+    if ($cryptoGen->cryptCheckStandard($bodytext)) {
+        $bodytext = $cryptoGen->decryptStandard($bodytext, null, 'database');
     }
 
     // translate from constant to the definition
@@ -316,7 +321,7 @@ if ($_POST['formaction']=="generate") {
     }
 
     if ($GLOBALS['drive_encryption']) {
-        $temp_bodytext = encryptStandard($temp_bodytext, null, 'database');
+        $temp_bodytext = $cryptoGen->encryptStandard($temp_bodytext, null, 'database');
     }
 
     if (! fwrite($fh, $temp_bodytext)) {
@@ -339,8 +344,8 @@ if ($_POST['formaction']=="generate") {
 
     fclose($fh);
 
-    if (cryptCheckStandard($bodytext)) {
-        $bodytext = decryptStandard($bodytext, null, 'database');
+    if ($cryptoGen->cryptCheckStandard($bodytext)) {
+        $bodytext = $cryptoGen->decryptStandard($bodytext, null, 'database');
     }
 
     // translate from constant to the definition
@@ -473,7 +478,7 @@ function insertAtCursor(myField, myValue) {
 <body class="body_top" onunload='imclosing()'>
 
 <form method='post' action='letter.php' id="theform" name="theform" onsubmit="return top.restoreSession()">
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+<input type="hidden" name="csrf_token_form" value="<?php echo attr(CsrfUtils::collectCsrfToken()); ?>" />
 <input type="hidden" name="formaction" id="formaction" value="">
 <input type='hidden' name='form_pid' value='<?php echo attr($pid) ?>' />
 
@@ -532,7 +537,7 @@ function insertAtCursor(myField, myValue) {
 
   <td>
    <select name="form_template" id="form_template" class='form-control'>
-   <option value="">(<?php echo xlt('none'); ?>)</option>
+   <option value="">(<?php echo xlt('none{{Template}}'); ?>)</option>
 <?php
 $tpldir = $GLOBALS['OE_SITE_DIR'] . "/documents/letter_templates";
 $dh = opendir($tpldir);
@@ -585,7 +590,7 @@ closedir($dh);
  <tr>
 
   <td class='control-label'>
-    <?php echo xlt('To'); ?>:
+    <?php echo xlt('To{{Destination}}'); ?>:
   </td>
 
   <td>
@@ -626,19 +631,19 @@ closedir($dh);
     <option value="<?php echo '{'.attr($FIELD_TAG['FROM_PHONECELL']).'}'; ?>"><?php echo xlt('FROM'); ?> - <?php echo xlt('Cell Phone'); ?></option>
     <option value="<?php echo '{'.attr($FIELD_TAG['FROM_PHONE']).'}'; ?>"><?php echo xlt('FROM'); ?> - <?php echo xlt('Phone'); ?></option>
     <option value="<?php echo '{'.attr($FIELD_TAG['FROM_EMAIL']).'}'; ?>"><?php echo xlt('FROM'); ?> - <?php echo xlt('email'); ?></option>
-    <option value="<?php echo '{'.attr($FIELD_TAG['TO_TITLE']).'}'; ?>"><?php echo xlt('TO'); ?> - <?php echo xlt('Title'); ?></option>
-    <option value="<?php echo '{'.attr($FIELD_TAG['TO_FNAME']).'}'; ?>"><?php echo xlt('TO'); ?> - <?php echo xlt('First name'); ?></option>
-    <option value="<?php echo '{'.attr($FIELD_TAG['TO_MNAME']).'}'; ?>"><?php echo xlt('TO'); ?> - <?php echo xlt('Middle name'); ?></option>
-    <option value="<?php echo '{'.attr($FIELD_TAG['TO_LNAME']).'}'; ?>"><?php echo xlt('TO'); ?> - <?php echo xlt('Last name'); ?></option>
-    <option value="<?php echo '{'.attr($FIELD_TAG['TO_STREET']).'}'; ?>"><?php echo xlt('TO'); ?> - <?php echo xlt('Street'); ?></option>
-    <option value="<?php echo '{'.attr($FIELD_TAG['TO_CITY']).'}'; ?>"><?php echo xlt('TO'); ?> - <?php echo xlt('City'); ?></option>
-    <option value="<?php echo '{'.attr($FIELD_TAG['TO_STATE']).'}'; ?>"><?php echo xlt('TO'); ?> - <?php echo xlt('State'); ?></option>
-    <option value="<?php echo '{'.attr($FIELD_TAG['TO_POSTAL']).'}'; ?>"><?php echo xlt('TO'); ?> - <?php echo xlt('Postal Code'); ?></option>
-    <option value="<?php echo '{'.attr($FIELD_TAG['TO_VALEDICTORY']).'}'; ?>"><?php echo xlt('TO'); ?> - <?php echo xlt('Valedictory'); ?></option>
-    <option value="<?php echo '{'.attr($FIELD_TAG['TO_ORGANIZATION']).'}'; ?>"><?php echo xlt('TO'); ?> - <?php echo xlt('Organization'); ?></option>
-    <option value="<?php echo '{'.attr($FIELD_TAG['TO_FAX']).'}'; ?>"><?php echo xlt('TO'); ?> - <?php echo xlt('Fax number'); ?></option>
-    <option value="<?php echo '{'.attr($FIELD_TAG['TO_PHONE']).'}'; ?>"><?php echo xlt('TO'); ?> - <?php echo xlt('Phone number'); ?></option>
-    <option value="<?php echo '{'.attr($FIELD_TAG['TO_PHONECELL']).'}'; ?>"><?php echo xlt('TO'); ?> - <?php echo xlt('Cell phone number'); ?></option>
+    <option value="<?php echo '{'.attr($FIELD_TAG['TO_TITLE']).'}'; ?>"><?php echo xlt('TO{{Destination}}'); ?> - <?php echo xlt('Title'); ?></option>
+    <option value="<?php echo '{'.attr($FIELD_TAG['TO_FNAME']).'}'; ?>"><?php echo xlt('TO{{Destination}}'); ?> - <?php echo xlt('First name'); ?></option>
+    <option value="<?php echo '{'.attr($FIELD_TAG['TO_MNAME']).'}'; ?>"><?php echo xlt('TO{{Destination}}'); ?> - <?php echo xlt('Middle name'); ?></option>
+    <option value="<?php echo '{'.attr($FIELD_TAG['TO_LNAME']).'}'; ?>"><?php echo xlt('TO{{Destination}}'); ?> - <?php echo xlt('Last name'); ?></option>
+    <option value="<?php echo '{'.attr($FIELD_TAG['TO_STREET']).'}'; ?>"><?php echo xlt('TO{{Destination}}'); ?> - <?php echo xlt('Street'); ?></option>
+    <option value="<?php echo '{'.attr($FIELD_TAG['TO_CITY']).'}'; ?>"><?php echo xlt('TO{{Destination}}'); ?> - <?php echo xlt('City'); ?></option>
+    <option value="<?php echo '{'.attr($FIELD_TAG['TO_STATE']).'}'; ?>"><?php echo xlt('TO{{Destination}}'); ?> - <?php echo xlt('State'); ?></option>
+    <option value="<?php echo '{'.attr($FIELD_TAG['TO_POSTAL']).'}'; ?>"><?php echo xlt('TO{{Destination}}'); ?> - <?php echo xlt('Postal Code'); ?></option>
+    <option value="<?php echo '{'.attr($FIELD_TAG['TO_VALEDICTORY']).'}'; ?>"><?php echo xlt('TO{{Destination}}'); ?> - <?php echo xlt('Valedictory'); ?></option>
+    <option value="<?php echo '{'.attr($FIELD_TAG['TO_ORGANIZATION']).'}'; ?>"><?php echo xlt('TO{{Destination}}'); ?> - <?php echo xlt('Organization'); ?></option>
+    <option value="<?php echo '{'.attr($FIELD_TAG['TO_FAX']).'}'; ?>"><?php echo xlt('TO{{Destination}}'); ?> - <?php echo xlt('Fax number'); ?></option>
+    <option value="<?php echo '{'.attr($FIELD_TAG['TO_PHONE']).'}'; ?>"><?php echo xlt('TO{{Destination}}'); ?> - <?php echo xlt('Phone number'); ?></option>
+    <option value="<?php echo '{'.attr($FIELD_TAG['TO_PHONECELL']).'}'; ?>"><?php echo xlt('TO{{Destination}}'); ?> - <?php echo xlt('Cell phone number'); ?></option>
     <option value="<?php echo '{'.attr($FIELD_TAG['PT_FNAME']).'}'; ?>"><?php echo xlt('PATIENT'); ?> - <?php echo xlt('First name'); ?></option>
     <option value="<?php echo '{'.attr($FIELD_TAG['PT_MNAME']).'}'; ?>"><?php echo xlt('PATIENT'); ?> - <?php echo xlt('Middle name'); ?></option>
     <option value="<?php echo '{'.attr($FIELD_TAG['PT_LNAME']).'}'; ?>"><?php echo xlt('PATIENT'); ?> - <?php echo xlt('Last name'); ?></option>

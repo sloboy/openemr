@@ -41,7 +41,7 @@ $grparr = array();
 getLayoutProperties('HIS', $grparr, 'grp_size');
 if (!empty($grparr['']['grp_size'])) {
     $FONTSIZE = $grparr['']['grp_size'];
-?>
+    ?>
 /* Override font sizes in the theme. */
 #HIS .groupname {
   font-size: <?php echo attr($FONTSIZE); ?>pt;
@@ -124,7 +124,7 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
                 </div>
             </div>
         </div>
-    <?php
+        <?php
     } ?>
     <div class="row">
         <div class="col-sm-12" style="margin-top: 20px;">
@@ -150,9 +150,7 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
 </script>
 <script type="text/javascript">
     // Array of skip conditions for the checkSkipConditions() function.
-    var skipArray = [
-        <?php echo js_escape($condition_str); ?>
-    ];
+    var skipArray = [<?php echo !empty($condition_str) ? js_escape($condition_str) : ''; ?>];
     checkSkipConditions();
 </script>
 

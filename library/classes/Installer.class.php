@@ -373,9 +373,10 @@ class Installer
         }
 
         // Create new 2fa if enabled
-        if (($this->i2faEnable) && (!empty($this->i2faSecret)) && (class_exists('Totp'))) {
+        if (($this->i2faEnable) && (!empty($this->i2faSecret)) && (class_exists('Totp')) && (class_exists('OpenEMR\Common\Crypto\CryptoGen'))) {
             // Encrypt the new secret with the hashed password
-            $secret = encryptStandard($this->i2faSecret, $hash);
+            $cryptoGen = new OpenEMR\Common\Crypto\CryptoGen();
+            $secret = $cryptoGen->encryptStandard($this->i2faSecret, $hash);
             if ($this->execute_sql("INSERT INTO login_mfa_registrations (user_id, name, method, var1, var2) VALUES (1, 'App Based 2FA', 'TOTP', '".$this->escapeSql($secret)."', '')") == false) {
                 $this->error_message = "ERROR. Unable to add initial user's 2FA credentials\n".
                     "<p>".mysqli_error($this->dbh)." (#".mysqli_errno($this->dbh).")\n";
@@ -470,7 +471,7 @@ $config = 1; /////////////
 //////////////////////////
 ?>
 ';
-    ?><?php // done just for coloring
+        ?><?php // done just for coloring
 
     fwrite($fd, $string) or $it_died++;
     fclose($fd) or $it_died++;
@@ -494,6 +495,7 @@ if ($it_died != 0) {
         } else {
             $GLOBALS['temp_skip_translations'] = true;
         }
+        $skipGlobalEvent = true; //use in globals.inc.php script to skip event stuff
         require(dirname(__FILE__) . '/../globals.inc.php');
         foreach ($GLOBALS_METADATA as $grpname => $grparr) {
             foreach ($grparr as $fldid => $fldarr) {
@@ -677,7 +679,7 @@ if ($it_died != 0) {
             if ($showError) {
                 $error_mes = mysqli_error($this->dbh);
                 $this->error_message = "unable to execute SQL: '$sql' due to: " . $error_mes;
-                error_log("ERROR IN OPENEMR INSTALL: Unable to execute SQL: " . $sql . " due to: " . $error_mes);
+                error_log("ERROR IN OPENEMR INSTALL: Unable to execute SQL: " . htmlspecialchars($sql, ENT_QUOTES) . " due to: " . htmlspecialchars($error_mes, ENT_QUOTES));
             }
             return false;
         }
@@ -995,12 +997,12 @@ DSTD;
             </div>
         </div>
         <script>
-            $(document).ready(function() {
+            $(function() {
                 $('#help-href').click (function(){
                     document.getElementById('targetiframe').src = "Documentation/help_files/openemr_installation_help.php";
                 })
             });
-            $(document).ready(function() {
+            $(function() {
                 $('#print-help-href').click (function(){
                     $("#targetiframe").get(0).contentWindow.print();
                 })

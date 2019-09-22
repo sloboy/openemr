@@ -5,18 +5,19 @@
  * @package   OpenEMR
  * @link      http://www.open-emr.org
  * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2018-2019 Brady Miller <brady.g.miller@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
 // Checks if the server's PHP version is compatible with OpenEMR:
-require_once(dirname(__FILE__) . "/../common/compatibility/Checker.php");
-$response = OpenEMR\Common\Checker::checkPhpVersion();
+require_once(dirname(__FILE__) . "/../src/Common/Compatibility/Checker.php");
+$response = OpenEMR\Common\Compatibility\Checker::checkPhpVersion();
 if ($response !== true) {
     die(htmlspecialchars($response));
 }
 
 use OpenEMR\Core\Kernel;
+use OpenEMR\Core\ModulesApplication;
 use Dotenv\Dotenv;
 
 // Throw error if the php openssl module is not installed.
@@ -48,11 +49,6 @@ if (!isset($ignoreAuth_onsite_portal_two)) {
 if (!defined('IS_WINDOWS')) {
     define('IS_WINDOWS', (stripos(PHP_OS, 'WIN') === 0));
 }
-
-// Some important php.ini overrides. Defaults for these values are often
-// too small.  You might choose to adjust them further.
-//
-ini_set('session.gc_maxlifetime', '14400');
 
 // The webserver_root and web_root are now automatically collected.
 // If not working, can set manually below.
@@ -93,18 +89,14 @@ if (preg_match("/^[^\/]/", $web_root)) {
 // only if you have some reason to.
 $GLOBALS['OE_SITES_BASE'] = "$webserver_root/sites";
 
-// The session name names a cookie stored in the browser.
-// Now that restore_session() is implemented in javaScript, session IDs are
-// effectively saved in the top level browser window and there is no longer
-// any need to change the session name for different OpenEMR instances.
-// On 4/8/17, added cookie_path to improve security when using different
-// OpenEMR instances on same server to prevent session conflicts; also
-// modified interface/login/login.php and library/restoreSession.php to be
-// consistent with this.
-ini_set('session.cookie_path', $web_root ? $web_root : '/');
-session_name("OpenEMR");
-
-session_start();
+// If a session does not yet exist, then will start the core OpenEMR session.
+//  If a session already exists, then this means portal is being used, which
+//  has already created a portal session/cookie, so will bypass setting of
+//  the core OpenEMR session/cookie.
+if (session_status() === PHP_SESSION_NONE) {
+    require_once(dirname(__FILE__) . "/../src/Common/Session/SessionUtil.php");
+    OpenEMR\Common\Session\SessionUtil::coreSessionStart($web_root);
+}
 
 // Set the site ID if required.  This must be done before any database
 // access is attempted.
@@ -129,8 +121,13 @@ if (empty($_SESSION['site_id']) || !empty($_GET['site'])) {
         }
     }
 
+    // for both REST API and browser access we can't proceed unless we have a valid site id.
+    // since this is user provided content we need to escape the value but we use htmlspecialchars instead
+    // of text() as our helper functions are loaded in later on in this file.
     if (empty($tmp) || preg_match('/[^A-Za-z0-9\\-.]/', $tmp)) {
-        die("Site ID '". text($tmp) . "' contains invalid characters.");
+        echo "Invalid URL";
+        error_log("Request with site id '". htmlspecialchars($tmp, ENT_QUOTES) . "' contains invalid characters.");
+        die();
     }
 
     if (isset($_SESSION['site_id']) && ($_SESSION['site_id'] != $tmp)) {
@@ -231,15 +228,7 @@ if (! is_dir($GLOBALS['MPDF_WRITE_DIR'])) {
 //  library/date_functions.php - Includes functions for date internationalization
 //  library/validation/validate_core.php - Includes functions for page validation
 //  library/translation.inc.php - Includes translation functions
-//  library/crypto.php - Includes crypto function
 require_once $GLOBALS['vendor_dir'] ."/autoload.php";
-
-// Set up csrf token
-// This is done in cases where it is not yet set for the session
-// (note this is permanently done for the session in the main_screen.php script)
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = createCsrfToken();
-}
 
 /**
  * @var Dotenv Allow a `.env` file to be read in and applied as $_SERVER variables.
@@ -251,35 +240,9 @@ if (empty($_SESSION['csrf_token'])) {
  * @link http://open-emr.org/wiki/index.php/Dotenv_Usage
  */
 if (file_exists("{$webserver_root}/.env")) {
-    $dotenv = new Dotenv($webserver_root);
+    $dotenv = Dotenv::create($webserver_root);
     $dotenv->load();
 }
-
-// @TODO This needs to be broken out to it's own function, but for time's sake
-// @TODO putting it here until we land on a good place. RD 2017-05-02
-
-$twigOptions = [
-    'debug' => false,
-];
-
-$twigLoader = new Twig_Loader_Filesystem();
-$twigEnv = new Twig_Environment($twigLoader, $twigOptions);
-
-if (array_key_exists('debug', $twigOptions) && $twigOptions['debug'] == true) {
-    $twigEnv->addExtension(new Twig_Extension_Debug());
-}
-
-$twigEnv->addGlobal('assets_dir', $GLOBALS['assets_static_relative']);
-$twigEnv->addGlobal('srcdir', $GLOBALS['srcdir']);
-$twigEnv->addGlobal('rootdir', $GLOBALS['rootdir']);
-$twigEnv->addFilter(new Twig_SimpleFilter('translate', function ($string) {
-    return xl($string);
-}));
-
-/** Twig_Loader */
-$GLOBALS['twigLoader'] = $twigLoader;
-/** Twig_Environment */
-$GLOBALS['twig'] = $twigEnv;
 
 // This will open the openemr mysql connection.
 require_once(dirname(__FILE__) . "/../library/sql.inc");
@@ -294,11 +257,32 @@ require_once(dirname(__FILE__) . "/../version.php");
 //    - TRACE is useful when debugging hard to spot bugs
 $GLOBALS["log_level"] = "OFF";
 
+// @TODO This needs to be broken out to it's own function, but for time's sake
+// @TODO putting it here until we land on a good place. RD 2017-05-02
+$twigOptions = [
+    'debug' => false,
+];
+$twigLoader = new Twig_Loader_Filesystem();
+$twigEnv = new Twig_Environment($twigLoader, $twigOptions);
+if (array_key_exists('debug', $twigOptions) && $twigOptions['debug'] == true) {
+    $twigEnv->addExtension(new Twig_Extension_Debug());
+}
+$twigEnv->addGlobal('assets_dir', $GLOBALS['assets_static_relative']);
+$twigEnv->addGlobal('srcdir', $GLOBALS['srcdir']);
+$twigEnv->addGlobal('rootdir', $GLOBALS['rootdir']);
+$twigEnv->addFilter(new Twig_SimpleFilter('translate', function ($string) {
+    return xl($string);
+}));
+/** Twig_Loader */
+$GLOBALS['twigLoader'] = $twigLoader;
+/** Twig_Environment */
+$GLOBALS['twig'] = $twigEnv;
+
 try {
     /** @var Kernel */
     $GLOBALS["kernel"] = new Kernel();
 } catch (\Exception $e) {
-    error_log($e->getMessage());
+    error_log(errorLogEscape($e->getMessage()));
     die();
 }
 
@@ -460,7 +444,7 @@ if (!empty($glrow)) {
             $css_header = $GLOBALS['css_header'];
         } else {
             // throw a warning if rtl'ed file does not exist.
-            error_log("Missing theme file ".text($webserver_root).'/public/themes/'.text($new_theme));
+            error_log("Missing theme file " . errorLogEscape($webserver_root) . '/public/themes/' . errorLogEscape($new_theme));
         }
     }
 
@@ -590,6 +574,23 @@ $SMTP_Auth = !empty($GLOBALS['SMTP_USER']);
 $GLOBALS['baseModDir'] = "interface/modules/"; //default path of modules
 $GLOBALS['customModDir'] = "custom_modules"; //non zend modules
 $GLOBALS['zendModDir'] = "zend_modules"; //zend modules
+
+try {
+    // load up the modules system and bootstrap them.
+    // This has to be fast, so any modules that tie into the bootstrap must be kept lightweight
+    // registering event listeners, etc.
+    // TODO: why do we have 3 different directories we need to pass in for the zend dir path. shouldn't zendModDir already have all the paths set up?
+    /** @var ModulesApplication */
+    $GLOBALS['modules_application'] = new ModulesApplication(
+        $GLOBALS["kernel"],
+        $GLOBALS['fileroot'],
+        $GLOBALS['baseModDir'],
+        $GLOBALS['zendModDir']
+    );
+} catch (\Exception $ex) {
+    error_log(errorLogEscape($ex->getMessage() . $ex->getTraceAsString()));
+    die();
+}
 
 // Don't change anything below this line. ////////////////////////////
 

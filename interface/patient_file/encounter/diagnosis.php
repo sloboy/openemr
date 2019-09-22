@@ -14,6 +14,7 @@ require_once("../../globals.php");
 require_once("$srcdir/acl.inc");
 
 use OpenEMR\Billing\BillingUtilities;
+use OpenEMR\Common\Csrf\CsrfUtils;
 
 $mode              = $_REQUEST['mode'];
 $type              = $_REQUEST['type'];
@@ -41,8 +42,8 @@ if ($payment_method == "insurance") {
 }
 
 if (isset($mode)) {
-    if (!verifyCsrfToken($_GET["csrf_token_form"])) {
-        csrfNotVerified();
+    if (!CsrfUtils::verifyCsrfToken($_GET["csrf_token_form"])) {
+        CsrfUtils::csrfNotVerified();
     }
 
     if ($mode == "add") {
@@ -149,7 +150,6 @@ if (isset($mode)) {
 ?>
 <html>
 <head>
-<?php html_header_show();?>
 <link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
 
 <script language="JavaScript">
@@ -227,7 +227,7 @@ if (!$thisauth) {
 }
 ?>
 
-<form name="diagnosis" method="post" action="diagnosis.php?mode=justify&csrf_token_form=<?php echo attr_url(collectCsrfToken()); ?>"
+<form name="diagnosis" method="post" action="diagnosis.php?mode=justify&csrf_token_form=<?php echo attr_url(CsrfUtils::collectCsrfToken()); ?>"
  onsubmit="return validate(this)">
 <table border=0 cellspacing=0 cellpadding=0 height=100%>
 <tr>
@@ -253,7 +253,7 @@ if (!empty($_GET["back"]) || !empty($_POST["back"])) {
 </dt>
 </dl>
 
-<a href="cash_receipt.php?csrf_token_form=<?php echo attr_url(collectCsrfToken()); ?>" class='link_submit' target='new' onclick='top.restoreSession()'>
+<a href="cash_receipt.php?csrf_token_form=<?php echo attr_url(CsrfUtils::collectCsrfToken()); ?>" class='link_submit' target='new' onclick='top.restoreSession()'>
 [<?php echo xlt('Receipt'); ?>]
 </a>
 <table border="0">
@@ -270,7 +270,7 @@ if ($result = BillingUtilities::getBillingByEncounter($pid, $encounter, "*")) {
                     attr($iter["code"]) . ']" type="checkbox" value="' . attr($iter["code"]) . '">' .
                     "</td><td><div><a target='" . attr($target) . "' class='small' " .
             "href='diagnosis_full.php' onclick='top.restoreSession()'><b>" .
-                    text($iter{"code"}) . "</b> " . text($iter{"code_text"}) .
+                    text($iter["code"]) . "</b> " . text($iter["code_text"]) .
                     "</a></div></td></tr>\n";
                 $billing_html[$iter["code_type"]] .= $html;
                 $counter++;
@@ -288,8 +288,8 @@ if ($result = BillingUtilities::getBillingByEncounter($pid, $encounter, "*")) {
                 attr($iter["code"]) . ']" type="checkbox" value="' . attr($iter["code"]) . '">' .
                 "</td><td><a target='$target' class='small' " .
             "href='diagnosis_full.php' onclick='top.restoreSession()'><b>" .
-                text($iter{"code"}) . ' ' . text($iter['modifier']) . "</b> " .
-                text(ucwords(strtolower($iter{"code_text"}))) . ' ' . text(oeFormatMoney($iter['fee'])) .
+                text($iter["code"]) . ' ' . text($iter['modifier']) . "</b> " .
+                text(ucwords(strtolower($iter["code_text"]))) . ' ' . text(oeFormatMoney($iter['fee'])) .
                 "</a><span class=\"small\">";
             $total += $iter['fee'];
             $js = explode(":", $iter['justify']);

@@ -15,9 +15,11 @@ require_once("../globals.php");
 require_once("$srcdir/acl.inc");
 require_once("$srcdir/options.inc.php");
 
+use OpenEMR\Common\Csrf\CsrfUtils;
+
 if (!empty($_POST)) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
+    if (!CsrfUtils::verifyCsrfToken($_POST["csrf_token_form"])) {
+        CsrfUtils::csrfNotVerified();
     }
 }
 
@@ -260,7 +262,7 @@ if ($type) { // note this only happens when its new
 ?>
 
 <script language="JavaScript">
- $(document).ready(function() {
+ $(function() {
   // customize the form via the type options
   typeSelect(<?php echo js_escape($row['abook_type']); ?>);
   if(typeof abook_type != 'undefined' && abook_type == 'ord_lab') {
@@ -270,7 +272,7 @@ if ($type) { // note this only happens when its new
 </script>
 
 <form method='post' name='theform' id="theform" action='addrbook_edit.php?userid=<?php echo attr_url($userid) ?>'>
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+<input type="hidden" name="csrf_token_form" value="<?php echo attr(CsrfUtils::collectCsrfToken()); ?>" />
 <center>
 
 <table border='0' width='100%'>
@@ -279,9 +281,9 @@ if ($type) { // note this only happens when its new
  <tr>
   <td width='1%' nowrap><b><?php echo xlt('Type'); ?>:</b></td>
   <td>
-<?php
- echo generate_select_list('form_abook_type', 'abook_type', $row['abook_type'], '', 'Unassigned', '', 'typeSelect(this.value)');
-?>
+    <?php
+    echo generate_select_list('form_abook_type', 'abook_type', $row['abook_type'], '', 'Unassigned', '', 'typeSelect(this.value)');
+    ?>
   </td>
  </tr>
 <?php } // end of if has admin access ?>
@@ -292,11 +294,11 @@ if ($type) { // note this only happens when its new
 <?php
  generate_form_field(array('data_type'=>1,'field_id'=>'title','list_id'=>'titles','empty_title'=>' '), $row['title']);
 ?>
-   <div style="display: inline-block"><b><?php echo xlt('Last'); ?>:</b><input type='text' size='10' name='form_lname' class='inputtext'
+   <div style="display: inline-block"><b><?php echo xlt('Last{{Name}}'); ?>:</b><input type='text' size='10' name='form_lname' class='inputtext'
                                                                                maxlength='50' value='<?php echo attr($row['lname']); ?>'/></div>
-   <div style="display: inline-block"><b><?php echo xlt('First'); ?>:</b> <input type='text' size='10' name='form_fname' class='inputtext'
+   <div style="display: inline-block"><b><?php echo xlt('First{{Name}}'); ?>:</b> <input type='text' size='10' name='form_fname' class='inputtext'
                                                                                  maxlength='50' value='<?php echo attr($row['fname']); ?>' />&nbsp;</div>
-   <div style="display: inline-block"><b><?php echo xlt('Middle'); ?>:</b> <input type='text' size='4' name='form_mname' class='inputtext'
+   <div style="display: inline-block"><b><?php echo xlt('Middle{{Name}}'); ?>:</b> <input type='text' size='4' name='form_mname' class='inputtext'
                                                                                   maxlength='50' value='<?php echo attr($row['mname']); ?>' /></div>
    <div style="display: inline-block"><b><?php echo xlt('Suffix'); ?>:</b> <input type='text' size='4' name='form_suffix' class='inputtext'
                                                                                   maxlength='50' value='<?php echo attr($row['suffix']); ?>' /></div>
@@ -331,11 +333,11 @@ if ($type) { // note this only happens when its new
 <?php
  generate_form_field(array('data_type'=>1,'field_id'=>'director_title','list_id'=>'titles','empty_title'=>' '), $row['title']);
 ?>
-   <b><?php echo xlt('Last'); ?>:</b><input type='text' size='10' name='form_director_lname' class='inputtext'
+   <b><?php echo xlt('Last{{Name}}'); ?>:</b><input type='text' size='10' name='form_director_lname' class='inputtext'
      maxlength='50' value='<?php echo attr($row['lname']); ?>'/>&nbsp;
-   <b><?php echo xlt('First'); ?>:</b> <input type='text' size='10' name='form_director_fname' class='inputtext'
+   <b><?php echo xlt('First{{Name}}'); ?>:</b> <input type='text' size='10' name='form_director_fname' class='inputtext'
      maxlength='50' value='<?php echo attr($row['fname']); ?>' />&nbsp;
-   <b><?php echo xlt('Middle'); ?>:</b> <input type='text' size='4' name='form_director_mname' class='inputtext'
+   <b><?php echo xlt('Middle{{Name}}'); ?>:</b> <input type='text' size='4' name='form_director_mname' class='inputtext'
      maxlength='50' value='<?php echo attr($row['mname']); ?>' />
    <b><?php echo xlt('Suffix'); ?>:</b> <input type='text' size='4' name='form_director_suffix' class='inputtext'
      maxlength='50' value='<?php echo attr($row['suffix']); ?>' />

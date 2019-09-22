@@ -35,7 +35,7 @@ $STMT_PRINT_CMD = $GLOBALS['print_command'];
  *  1.  The original statement, a text based statement, using CezPDF
  *      Altering this statement is labor intensive, but capable of being altered any way desired...
  *
- *  2.  Branded Statement, whose core is build from 1., the original statement, using HTML2PDF.
+ *  2.  Branded Statement, whose core is build from 1., the original statement, using mPDF.
  *
  *      To customize 2., add your practice location/images/practice_logo.gif
  *      In the base/default install this is located at '/openemr/sites/default/images/practice_logo.gif',
@@ -151,7 +151,7 @@ function create_HTML_statement($stmt)
     $remit_csz = "{$row['city']}, {$row['state']}, {$row['postal_code']}";
 
     ob_start();
-?><div style="padding-left:25px;">
+    ?><div style="padding-left:25px;">
     <?php
     $find_provider = sqlQuery("SELECT * FROM form_encounter " .
         "WHERE pid = ? AND encounter = ? " .
@@ -169,20 +169,20 @@ function create_HTML_statement($stmt)
     if ($GLOBALS['use_dunning_message']) {
         if ($stmt['ins_paid'] != 0 || $stmt['level_closed'] == 4) {
             // do collection messages
-            switch ($stmt{'age'}) {
-                case $stmt{'age'} <= $GLOBALS['first_dun_msg_set']:
+            switch ($stmt['age']) {
+                case $stmt['age'] <= $GLOBALS['first_dun_msg_set']:
                     $dun_message = $GLOBALS['first_dun_msg_text'];
                     break;
-                case $stmt{'age'} <= $GLOBALS['second_dun_msg_set']:
+                case $stmt['age'] <= $GLOBALS['second_dun_msg_set']:
                     $dun_message = $GLOBALS['second_dun_msg_text'];
                     break;
-                case $stmt{'age'} <= $GLOBALS['third_dun_msg_set']:
+                case $stmt['age'] <= $GLOBALS['third_dun_msg_set']:
                     $dun_message = $GLOBALS['third_dun_msg_text'];
                     break;
-                case $stmt{'age'} <= $GLOBALS['fourth_dun_msg_set']:
+                case $stmt['age'] <= $GLOBALS['fourth_dun_msg_set']:
                     $dun_message = $GLOBALS['fourth_dun_msg_text'];
                     break;
-                case $stmt{'age'} >= $GLOBALS['fifth_dun_msg_set']:
+                case $stmt['age'] >= $GLOBALS['fifth_dun_msg_set']:
                     $dun_message = $GLOBALS['fifth_dun_msg_text'];
                     break;
             }
@@ -553,8 +553,8 @@ function create_statement($stmt)
     // Contacts
     $atres = sqlStatement("select f.attn,f.phone from facility f " .
         " left join users u on f.id=u.facility_id " .
-        " left join  billing b on b.provider_id=u.id and b.pid = '".$stmt['pid']."'  " .
-        " where billing_location=1");
+        " left join  billing b on b.provider_id=u.id and b.pid = ?  " .
+        " where billing_location=1", [$stmt['pid']]);
     $row = sqlFetchArray($atres);
     $billing_contact = "{$row['attn']}";
     $billing_phone = "{$row['phone']}";
@@ -569,20 +569,20 @@ function create_statement($stmt)
     if ($GLOBALS['use_dunning_message']) {
         if ($stmt['ins_paid'] != 0 || $stmt['level_closed'] == 4) {
             // do collection messages
-            switch ($stmt{'age'}) {
-                case $stmt{'age'} <= $GLOBALS['first_dun_msg_set']:
+            switch ($stmt['age']) {
+                case $stmt['age'] <= $GLOBALS['first_dun_msg_set']:
                     $dun_message = $GLOBALS['first_dun_msg_text'];
                     break;
-                case $stmt{'age'} <= $GLOBALS['second_dun_msg_set']:
+                case $stmt['age'] <= $GLOBALS['second_dun_msg_set']:
                     $dun_message = $GLOBALS['second_dun_msg_text'];
                     break;
-                case $stmt{'age'} <= $GLOBALS['third_dun_msg_set']:
+                case $stmt['age'] <= $GLOBALS['third_dun_msg_set']:
                     $dun_message = $GLOBALS['third_dun_msg_text'];
                     break;
-                case $stmt{'age'} <= $GLOBALS['fourth_dun_msg_set']:
+                case $stmt['age'] <= $GLOBALS['fourth_dun_msg_set']:
                     $dun_message = $GLOBALS['fourth_dun_msg_text'];
                     break;
-                case $stmt{'age'} >= $GLOBALS['fifth_dun_msg_set']:
+                case $stmt['age'] >= $GLOBALS['fifth_dun_msg_set']:
                     $dun_message = $GLOBALS['fifth_dun_msg_text'];
                     break;
             }
@@ -852,7 +852,7 @@ function osp_create_HTML_statement($stmt)
     $remit_csz = $clinic_csz;
 
     ob_start();
-?><div style="padding-left:25px;">
+    ?><div style="padding-left:25px;">
     <?php
     $find_provider = sqlQuery("SELECT * FROM form_encounter " .
         "WHERE pid = ? AND encounter = ? " .
@@ -870,20 +870,20 @@ function osp_create_HTML_statement($stmt)
     if ($GLOBALS['use_dunning_message']) {
         if ($stmt['ins_paid'] != 0 || $stmt['level_closed'] == 4) {
             // do collection messages
-            switch ($stmt{'age'}) {
-                case $stmt{'age'} <= $GLOBALS['first_dun_msg_set']:
+            switch ($stmt['age']) {
+                case $stmt['age'] <= $GLOBALS['first_dun_msg_set']:
                     $dun_message = $GLOBALS['first_dun_msg_text'];
                     break;
-                case $stmt{'age'} <= $GLOBALS['second_dun_msg_set']:
+                case $stmt['age'] <= $GLOBALS['second_dun_msg_set']:
                     $dun_message = $GLOBALS['second_dun_msg_text'];
                     break;
-                case $stmt{'age'} <= $GLOBALS['third_dun_msg_set']:
+                case $stmt['age'] <= $GLOBALS['third_dun_msg_set']:
                     $dun_message = $GLOBALS['third_dun_msg_text'];
                     break;
-                case $stmt{'age'} <= $GLOBALS['fourth_dun_msg_set']:
+                case $stmt['age'] <= $GLOBALS['fourth_dun_msg_set']:
                     $dun_message = $GLOBALS['fourth_dun_msg_text'];
                     break;
-                case $stmt{'age'} >= $GLOBALS['fifth_dun_msg_set']:
+                case $stmt['age'] >= $GLOBALS['fifth_dun_msg_set']:
                     $dun_message = $GLOBALS['fifth_dun_msg_text'];
                     break;
             }
@@ -1134,5 +1134,3 @@ function osp_create_HTML_statement($stmt)
     $output = ob_get_clean();
     return $output;
 }
-
-        ?>

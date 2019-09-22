@@ -12,14 +12,20 @@
 
 require_once("../globals.php");
 
-
+use OpenEMR\Common\Crypto\CryptoGen;
 
 $filename = $GLOBALS['OE_SITE_DIR'] . '/documents/couchdb/log.txt';
 
+if (!file_exists($filename)) {
+    echo xlt("CouchDB error log is empty");
+    exit;
+}
+
 $fh = file_get_contents($filename);
 
-if (cryptCheckStandard($fh)) {
-    $fh = decryptStandard($fh, null, 'database');
+$cryptoGen = new CryptoGen();
+if ($cryptoGen->cryptCheckStandard($fh)) {
+    $fh = $cryptoGen->decryptStandard($fh, null, 'database');
 }
 
 if (!empty($fh)) {

@@ -16,12 +16,12 @@ require_once("$srcdir/acl.inc");
 require_once("$srcdir/patient.inc");
 require_once("$srcdir/payment.inc.php");
 require_once("$srcdir/forms.inc");
-require_once("$srcdir/invoice_summary.inc.php");
 require_once("../../custom/code_types.inc.php");
 require_once("$srcdir/options.inc.php");
 require_once("$srcdir/encounter_events.inc.php");
 
 use OpenEMR\Billing\BillingUtilities;
+use OpenEMR\Common\Csrf\CsrfUtils;
 use OpenEMR\Core\Header;
 use OpenEMR\OeUI\OemrUI;
 use OpenEMR\Services\FacilityService;
@@ -154,8 +154,8 @@ $alertmsg = ''; // anything here pops up in an alert box
 
 // If the Save button was clicked...
 if ($_POST['form_save']) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
+    if (!CsrfUtils::verifyCsrfToken($_POST["csrf_token_form"])) {
+        CsrfUtils::csrfNotVerified();
     }
 
     $form_pid = $_POST['form_pid'];
@@ -165,7 +165,7 @@ if ($_POST['form_save']) {
     $NameNew = $patdata['fname'] . " " . $patdata['lname'] . " " . $patdata['mname'];
 
     if ($_REQUEST['radio_type_of_payment'] == 'pre_payment') {
-            $payment_id = idSqlStatement(
+            $payment_id = sqlInsert(
                 "insert into ar_session set " .
                 "payer_id = ?" .
                 ", patient_id = ?" .
@@ -199,7 +199,7 @@ if ($_POST['form_save']) {
                     }
                 }
 
-        //----------------------------------------------------------------------------------------------------
+                //----------------------------------------------------------------------------------------------------
                   //Fetching the existing code and modifier
                   $ResultSearchNew = sqlStatement(
                       "SELECT * FROM billing LEFT JOIN code_types ON billing.code_type=code_types.ct_key ".
@@ -216,7 +216,7 @@ if ($_POST['form_save']) {
                     $Modifier = '';
                 }
 
-        //----------------------------------------------------------------------------------------------------
+                //----------------------------------------------------------------------------------------------------
                 if ($_REQUEST['radio_type_of_payment'] == 'copay') {//copay saving to ar_session and ar_activity tables
                     $session_id = sqlInsert(
                         "INSERT INTO ar_session (payer_id,user_id,reference,check_date,deposit_date,pay_total," .
@@ -250,7 +250,7 @@ if ($_POST['form_save']) {
                     }
 
                           $adjustment_code = 'patient_payment';
-                          $payment_id = idSqlStatement(
+                          $payment_id = sqlInsert(
                               "insert into ar_session set " .
                               "payer_id = ?" .
                               ", patient_id = ?" .
@@ -267,11 +267,11 @@ if ($_POST['form_save']) {
                               array(0, $form_pid, $_SESSION['authUserID'], 0, $form_source, $amount, $NameNew, $adjustment_code, $form_method)
                           );
 
-              //--------------------------------------------------------------------------------------------------------------------
+                    //--------------------------------------------------------------------------------------------------------------------
 
                             frontPayment($form_pid, $enc, $form_method, $form_source, 0, $amount, $timestamp);//insertion to 'payments' table.
 
-              //--------------------------------------------------------------------------------------------------------------------
+                    //--------------------------------------------------------------------------------------------------------------------
 
                             $resMoneyGot = sqlStatement(
                                 "SELECT sum(pay_amount) as PatientPay FROM ar_activity where pid =? and " .
@@ -281,7 +281,7 @@ if ($_POST['form_save']) {
                             $rowMoneyGot = sqlFetchArray($resMoneyGot);
                             $Copay = $rowMoneyGot['PatientPay'];
 
-              //--------------------------------------------------------------------------------------------------------------------
+                    //--------------------------------------------------------------------------------------------------------------------
 
                             //Looping the existing code and modifier
                             $ResultSearchNew = sqlStatement(
@@ -368,7 +368,7 @@ if ($_POST['form_save']) {
                                 sqlCommitTrans();
                     }
 
-                  //--------------------------------------------------------------------------------------------------------------------
+                    //--------------------------------------------------------------------------------------------------------------------
                 }//invoice_balance
             }//if ($amount = 0 + $payment)
         }//foreach
@@ -414,32 +414,26 @@ if ($_POST['form_save'] || $_REQUEST['receipt']) {
     }
 
     // Now proceed with printing the receipt.
-?>
+    ?>
 
 <title><?php echo xlt('Receipt for Payment'); ?></title>
-<?php Header::setupHeader(['jquery-ui']); ?>
+    <?php Header::setupHeader(['jquery-ui']); ?>
 <script language="JavaScript">
 
-<?php require($GLOBALS['srcdir'] . "/restoreSession.php"); ?>
+    <?php require($GLOBALS['srcdir'] . "/restoreSession.php"); ?>
 
-$(document).ready(function () {
+$(function() {
     var win = top.printLogSetup ? top : opener.top;
     win.printLogSetup(document.getElementById('printbutton'));
 });
 
 function closeHow(e) {
-    if (top.tab_mode) {
-        top.activateTabByName('pat', true);
-        top.tabCloseByName(window.name);
-    } else {
-        if (opener) {
-            if (opener.name === "left_nav") {
-                dlgclose();
-                return;
-            }
-        }
-        window.history.back();
+    if (opener) {
+        dlgclose();
+        return;
     }
+    top.activateTabByName('pat', true);
+    top.tabCloseByName(window.name);
 }
 
 // This is action to take before printing and is called from restoreSession.php.
@@ -455,7 +449,7 @@ function printlog_before_print() {
 
 // Process click on Delete button.
 function deleteme() {
-    dlgopen('deleter.php?payment=' + <?php echo js_url($payment_key); ?> + '&csrf_token_form=' + <?php echo js_url(collectCsrfToken()); ?>, '_blank', 500, 450);
+    dlgopen('deleter.php?payment=' + <?php echo js_url($payment_key); ?> + '&csrf_token_form=' + <?php echo js_url(CsrfUtils::collectCsrfToken()); ?>, '_blank', 500, 450);
     return false;
 }
 
@@ -472,16 +466,7 @@ function imdeleted() {
 // This also closes the popup window.
 function toencounter(enc, datestr, topframe) {
     topframe.restoreSession();
-    // Hard-coding of RBot for this purpose is awkward, but since this is a
-    // pop-up and our openemr is left_nav, we have no good clue as to whether
-    // the top frame is more appropriate.
-    if(!top.tab_mode) {
-        topframe.left_nav.forceDual();
-        topframe.left_nav.setEncounter(datestr, enc, '');
-        topframe.left_nav.loadFrame('enc2', 'RBot', 'patient_file/encounter/encounter_top.php?set_encounter=' + encodeURIComponent(enc));
-    } else {
-        top.goToEncounter(enc);
-    }
+    top.goToEncounter(enc);
     if (opener) dlgclose();
 }
 </script>
@@ -563,15 +548,15 @@ function toencounter(enc, datestr, topframe) {
     </center>
 </body>
 
-<?php
-  //
-  // End of receipt printing logic.
-  //
+    <?php
+    //
+    // End of receipt printing logic.
+    //
 } else {
-  //
-  // Here we display the form for data entry.
-  //
-?>
+    //
+    // Here we display the form for data entry.
+    //
+    ?>
 <title><?php echo xlt('Record Payment'); ?></title>
 
 <style type="text/css">
@@ -594,7 +579,7 @@ function toencounter(enc, datestr, topframe) {
 <script language='JavaScript'>
     var mypcc = '1';
 </script>
-<?php include_once("{$GLOBALS['srcdir']}/ajax/payment_ajax_jav.inc.php"); ?>
+    <?php include_once("{$GLOBALS['srcdir']}/ajax/payment_ajax_jav.inc.php"); ?>
 <script language="javascript" type="text/javascript">
     document.onclick=HideTheAjaxDivs;
 </script>
@@ -602,20 +587,14 @@ function toencounter(enc, datestr, topframe) {
 <script type="text/javascript" src="../../library/topdialog.js"></script>
 
 <script language="JavaScript">
-<?php require($GLOBALS['srcdir'] . "/restoreSession.php"); ?>
+    <?php require($GLOBALS['srcdir'] . "/restoreSession.php"); ?>
 function closeHow(e) {
-    if (top.tab_mode) {
-        top.activateTabByName('pat', true);
-        top.tabCloseByName(window.name);
-    } else {
-       if (opener) {
-            if (opener.name === "left_nav") {
-                dlgclose();
-                return;
-            }
-        }
-        window.history.back();
+    if (opener) {
+        dlgclose();
+        return;
     }
+    top.activateTabByName('pat', true);
+    top.tabCloseByName(window.name);
 }
 function calctotal() {
     var f = document.forms[0];
@@ -946,9 +925,9 @@ function make_insurance() {
 }
 </style>
 <title><?php echo xlt('Record Payment'); ?></title>
-<?php $NameNew = $patdata['fname'] . " " . $patdata['lname'] . " " . $patdata['mname']; ?>
-<?php
-$arrOeUiSettings = array(
+    <?php $NameNew = $patdata['fname'] . " " . $patdata['lname'] . " " . $patdata['mname']; ?>
+    <?php
+    $arrOeUiSettings = array(
     'heading_title' => xl('Accept Payment'),
     'include_patient_name' => true,// use only in appropriate pages
     'expandable' => false,
@@ -958,9 +937,9 @@ $arrOeUiSettings = array(
     'action_href' => "",//only for actions - reset, link or back
     'show_help_icon' => false,
     'help_file_name' => ""
-);
-$oemr_ui = new OemrUI($arrOeUiSettings);
-?>
+    );
+    $oemr_ui = new OemrUI($arrOeUiSettings);
+    ?>
 </head>
 <body>
     <div class="container"><!--begin container div for form-->
@@ -974,7 +953,7 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
         <div class="row">
             <div class="col-sm-12">
                 <form method='post' action='front_payment.php<?php echo ($payid) ? "?payid=".attr_url($payid) : ""; ?>' onsubmit='return validate();'>
-                   <input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+                   <input type="hidden" name="csrf_token_form" value="<?php echo attr(CsrfUtils::collectCsrfToken()); ?>" />
                    <input name='form_pid' type='hidden' value='<?php echo attr($pid) ?>'>
                     <fieldset>
                     <legend><?php echo xlt('Payment'); ?></legend>
@@ -1273,10 +1252,10 @@ $oemr_ui = new OemrUI($arrOeUiSettings);
         <script language="JavaScript">
         calctotal();
         </script>
-    <?php
-}
-    ?>
     </div><!--end of container div of accept payment i.e the form-->
-    <?php $oemr_ui->oeBelowContainerDiv();?>
+    <?php
+        $oemr_ui->oeBelowContainerDiv();
+} // forms else close
+?>
 </body>
 </html>

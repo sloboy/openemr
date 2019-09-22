@@ -20,16 +20,19 @@ require_once($GLOBALS['srcdir'].'/options.inc.php');
 require_once($GLOBALS['fileroot'].'/custom/code_types.inc.php');
 require_once($GLOBALS['srcdir'].'/csv_like_join.php');
 
+
+use OpenEMR\Common\Csrf\CsrfUtils;
 use OpenEMR\Core\Header;
 
 // TBD - Resolve functional issues if opener is included in Header
 ?>
 <script type="text/javascript" src="<?php echo $webroot ?>/interface/main/tabs/js/include_opener.js?v=<?php echo $v_js_includes; ?>"></script>
+<script><?php require($GLOBALS['srcdir'] . '/formatting_DateToYYYYMMDD_js.js.php'); ?></script>
 <?php
 
 if ($_POST['form_save']) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
+    if (!CsrfUtils::verifyCsrfToken($_POST["csrf_token_form"])) {
+        CsrfUtils::csrfNotVerified();
     }
 
     // Following hidden field received in the form will be used to ensure integrity of form values
@@ -211,8 +214,8 @@ function ActiveIssueCodeRecycleFn($thispid2, $ISSUE_TYPES2)
 // If we are saving, then save and close the window.
 //
 if ($_POST['form_save']) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
+    if (!CsrfUtils::verifyCsrfToken($_POST["csrf_token_form"])) {
+        CsrfUtils::csrfNotVerified();
     }
 
     $i = 0;
@@ -223,8 +226,8 @@ if ($_POST['form_save']) {
         }
     }
 
-    $form_begin = fixDate($_POST['form_begin'], '');
-    $form_end   = fixDate($_POST['form_end'], '');
+    $form_begin = ($_POST['form_begin']) ? DateToYYYYMMDD($_POST['form_begin']) : '';
+    $form_end   = ($_POST['form_end']) ? DateToYYYYMMDD($_POST['form_end']) : '';
 
     $form_injury_part = $_POST['form_medical_system'];
     $form_injury_type = $_POST['form_medical_type'];
@@ -494,7 +497,7 @@ if ($ISSUE_TYPES['ippf_gcac'] && !$_POST['form_save']) {
 
  // Process click on Delete link.
  function deleteme() {
-  dlgopen('../deleter.php?issue=' + <?php echo js_url($issue); ?> + '&csrf_token_form=' + <?php echo js_url(collectCsrfToken()); ?>, '_blank', 500, 450);
+  dlgopen('../deleter.php?issue=' + <?php echo js_url($issue); ?> + '&csrf_token_form=' + <?php echo js_url(CsrfUtils::collectCsrfToken()); ?>, '_blank', 500, 450);
   return false;
  }
 
@@ -589,7 +592,14 @@ dlgopen(<?php echo js_escape($url); ?>, '_blank', 985, 800, '', <?php echo xlj("
 // Check for errors when the form is submitted.
 function validate() {
  var f = document.forms[0];
- if(f.form_begin.value > f.form_end.value && (f.form_end.value)) {
+ var begin_date_val=f.form_begin.value;
+     begin_date_val= begin_date_val ? DateToYYYYMMDD_js(begin_date_val):begin_date_val;
+ var end_date_val=f.form_end.value;
+     end_date_val = end_date_val ? DateToYYYYMMDD_js(end_date_val):end_date_val;
+ var begin_date=new Date(begin_date_val);
+ var end_date=new Date(end_date_val);
+
+ if( (end_date_val) && (begin_date > end_date) ) {
   alert(<?php echo xlj('Please Enter End Date greater than Begin Date!'); ?>);
   return false;
  }
@@ -612,11 +622,11 @@ function divclick(cb, divid) {
  return true;
 }
 
-$(document).ready(function() {
+$(function() {
     $('.datepicker').datetimepicker({
         <?php $datetimepicker_timepicker = false; ?>
         <?php $datetimepicker_showseconds = false; ?>
-        <?php $datetimepicker_formatInput = false; ?>
+        <?php $datetimepicker_formatInput = true; ?>
         <?php require($GLOBALS['srcdir'] . '/js/xl/jquery-datetimepicker-2-5-4.js.php'); ?>
         <?php // can add any additional javascript settings to datetimepicker here; need to prepend first setting with a comma ?>
     });
@@ -663,7 +673,7 @@ if ($issue) {
     <div class='tab current' style='height:auto;width:97%;'>
         <div class='col-sm-12'>
             <form class="form-horizontal" name='theform' method="post" onsubmit='return validate()'>
-                <input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+                <input type="hidden" name="csrf_token_form" value="<?php echo attr(CsrfUtils::collectCsrfToken()); ?>" />
                 <?php
                 // action setting not required in html5.  By default form will submit to itself.
                 // Provide key values previously passed as part of action string.
@@ -732,7 +742,7 @@ if ($issue) {
                     <label class="control-label col-xs-2" for="form_begin"><?php echo xlt('Begin Date'); ?>:</label>
                     <div class="col-xs-10">
                         <input type='text' class='datepicker form-control' style="width:50%" name='form_begin' id='form_begin'
-                        value='<?php echo attr($irow['begdate']) ?>'
+                        value='<?php echo attr(oeFormatShortDate($irow['begdate'])) ?>'
                         title='<?php echo xla('yyyy-mm-dd date of onset, surgery or start of medication'); ?>'>
                     </div>
                 </div>
@@ -740,13 +750,13 @@ if ($issue) {
                     <label class="control-label col-xs-2" for="form_begin"><?php echo xlt('End Date'); ?>:</label>
                     <div class="col-xs-10">
                         <input type='text' class='datepicker form-control' style="width:50%" name='form_end' id='form_end'
-                        value='<?php echo attr($irow['enddate']) ?>'
+                        value='<?php echo attr(oeFormatShortDate($irow['enddate'])) ?>'
                         title='<?php echo xla('yyyy-mm-dd date of recovery or end of medication'); ?>' />
                         &nbsp;(<?php echo xlt('leave blank if still active'); ?>)
                     </div>
                 </div>
                 <div class="form-group" id='row_active'>
-                    <label class="control-label col-xs-2" for="form_active"><?php echo xlt('Active'); ?>: </label>
+                    <label class="control-label col-xs-2" for="form_active"><?php echo xlt('Active{{Issue}}'); ?>: </label>
                     <div class="col-xs-10">
                         <div class="checkbox">
                             <label><input type='checkbox' name='form_active' id=='form_active' value='1' <?php echo ($irow['enddate']) ? "" : "checked"; ?>
@@ -857,7 +867,7 @@ if ($issue) {
                                 <?php
                                 if ($issue && acl_check('admin', 'super')) { ?>
                                     <button type='submit' name='form_delete'  class="btn btn-default btn-cancel btn-delete btn-separate-left" onclick='deleteme()' value='<?php echo xla('Delete'); ?>'><?php echo xlt('Delete'); ?></button>
-                                <?php
+                                    <?php
                                 } ?>
                             </div>
                         </div>
@@ -885,7 +895,7 @@ if ($issue) {
  // Set up the tabbed UI.
  tabbify();
 
-$(document).ready(function() {
+$(function() {
     // Include bs3 / bs4 classes here.  Keep html tags functional.
     $('table').addClass('table table-sm');
 });

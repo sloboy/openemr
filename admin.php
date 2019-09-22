@@ -12,8 +12,8 @@
  * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 // Checks if the server's PHP version is compatible with OpenEMR:
-require_once(dirname(__FILE__) . "/common/compatibility/Checker.php");
-$response = OpenEMR\Common\Checker::checkPhpVersion();
+require_once(dirname(__FILE__) . "/src/Common/Compatibility/Checker.php");
+$response = OpenEMR\Common\Compatibility\Checker::checkPhpVersion();
 if ($response !== true) {
     die(htmlspecialchars($response));
 }
@@ -240,12 +240,12 @@ function sqlQuery($statement, $link)
             </div>
         </div>
         <script>
-            $(document).ready(function() {
+            $(function() {
                 $('#help-href').click (function(){
                     document.getElementById('targetiframe').src = "Documentation/help_files/openemr_multisite_admin_help.php";
                 })
             });
-            $(document).ready(function() {
+            $(function() {
                 $('#print-help-href').click (function(){
                     $("#targetiframe").get(0).contentWindow.print();
                 })

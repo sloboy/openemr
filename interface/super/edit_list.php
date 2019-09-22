@@ -19,11 +19,12 @@ require_once("$srcdir/lists.inc");
 require_once("../../custom/code_types.inc.php");
 require_once("$srcdir/options.inc.php");
 
+use OpenEMR\Common\Csrf\CsrfUtils;
 use OpenEMR\Core\Header;
 
 if (!empty($_POST)) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
+    if (!CsrfUtils::verifyCsrfToken($_POST["csrf_token_form"])) {
+        CsrfUtils::csrfNotVerified();
     }
 }
 
@@ -61,7 +62,7 @@ if ($_POST['formaction'] == 'save' && $list_id) {
             $option = trim($iter['option']);
             $codes = trim($iter['codes']);
             if (strlen($category) > 0 && strlen($option) > 0) {
-                sqlInsert("INSERT INTO fee_sheet_options ( " .
+                sqlStatement("INSERT INTO fee_sheet_options ( " .
                     "fs_category, fs_option, fs_codes " .
                     ") VALUES ( ?,?,? )", array($category, $option, $codes));
             }
@@ -90,7 +91,7 @@ if ($_POST['formaction'] == 'save' && $list_id) {
             $ct_problem = empty($iter['ct_problem']) ? 0 : 1;
             $ct_drug = empty($iter['ct_drug']) ? 0 : 1;
             if (strlen($ct_key) > 0 && $ct_id > 0) {
-                sqlInsert(
+                sqlStatement(
                     "INSERT INTO code_types ( " .
                     "ct_key, ct_id, ct_seq, ct_mod, ct_just, ct_mask, ct_fee, ct_rel, ct_nofs, ct_diag, ct_active, ct_label, ct_external, ct_claim, ct_proc, ct_term, ct_problem, ct_drug " .
                     ") VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -125,7 +126,7 @@ if ($_POST['formaction'] == 'save' && $list_id) {
             $it_category = trim($iter['category']);
             $it_type = trim($iter['type']);
             if ((strlen($it_category) > 0) && (strlen($it_type) > 0)) {
-                sqlInsert("INSERT INTO issue_types (" .
+                sqlStatement("INSERT INTO issue_types (" .
                     "`active`,`category`,`ordering`, `type`, `plural`, `singular`, `abbreviation`, `style`, " .
                     "`force_show`, `aco_spec`) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", array(
                     trim($iter['active']),
@@ -203,7 +204,7 @@ if ($_POST['formaction'] == 'save' && $list_id) {
                     continue;
                 }
                 // Insert the list item
-                sqlInsert(
+                sqlStatement(
                     "INSERT INTO list_options ( " .
                     "list_id, option_id, title, seq, is_default, option_value, mapping, notes, codes, toggle_setting_1, toggle_setting_2, activity, subtype " .
                     ") VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -235,7 +236,7 @@ if ($_POST['formaction'] == 'save' && $list_id) {
     $row = sqlQuery("SELECT max(seq) AS maxseq FROM list_options WHERE list_id= 'lists'");
 
     // add the new list to the list-of-lists
-    sqlInsert("INSERT INTO list_options ( " .
+    sqlStatement("INSERT INTO list_options ( " .
         "list_id, option_id, title, seq, is_default, option_value " .
         ") VALUES ( 'lists', ?, ?, ?, '1', '0')", array($newlistID, $_POST['newlistname'], ($row['maxseq'] + 1)));
     $list_id = $newlistID;
@@ -363,12 +364,10 @@ function writeOptionLine(
         echo "<input type='text' name='opt[" . attr($opt_line_no) . "][value]' value='" .
             attr($value) . "' size='8' maxlength='15' class='optin' />";
         echo "</td>\n";
-    } // Adjustment reasons use option_value as a reason category.  This is
-    // needed to distinguish between adjustments that change the invoice
-    // balance and those that just shift responsibility of payment or
-    // are used as comments.
-    //
-    elseif ($list_id == 'adjreason') {
+    } elseif ($list_id == 'adjreason') { // Adjustment reasons use option_value as a reason category.  This is
+        // needed to distinguish between adjustments that change the invoice
+        // balance and those that just shift responsibility of payment or
+        // are used as comments.
         echo "  <td>";
         echo "<select name='opt[" . attr($opt_line_no) . "][value]' class='optin'>";
         foreach (array(
@@ -386,10 +385,8 @@ function writeOptionLine(
         }
         echo "</select>";
         echo "</td>\n";
-    } // Address book categories use option_value to flag category as a
-    // person-centric vs company-centric vs indifferent.
-    //
-    elseif ($list_id == 'abook_type') {
+    } elseif ($list_id == 'abook_type') { // Address book categories use option_value to flag category as a
+        // person-centric vs company-centric vs indifferent.
         echo "  <td>";
         echo "<select name='opt[" . attr($opt_line_no) . "][value]' class='optin'>";
         foreach (array(
@@ -405,10 +402,7 @@ function writeOptionLine(
         }
         echo "</select>";
         echo "</td>\n";
-    } // Immunization categories use option_value to map list items
-    // to CVX codes.
-    //
-    elseif ($list_id == 'immunizations') {
+    } elseif ($list_id == 'immunizations') { // Immunization categories use option_value to map list items to CVX codes.
         echo "  <td>";
         echo "<input type='text' size='10' name='opt[" . attr($opt_line_no) . "][value]' " .
             "value='" . attr($value) . "' onclick='sel_cvxcode(this)' " .
@@ -718,7 +712,7 @@ function writeITLine($it_array)
     echo " <tr>\n";
     echo ctSelector($opt_line_no, $it_array, 'category', $ISSUE_TYPE_CATEGORIES, xl('OpenEMR Application Category'));
     echo ctGenCBox($opt_line_no, $it_array, 'active', xl('Is this active?'));
-    echo ctGenCell($opt_line_no, $it_array, 'ordering', 4, 10, xl('Order'));
+    echo ctGenCell($opt_line_no, $it_array, 'ordering', 4, 10, xl('Order{{Sequence}}'));
     echo ctGenCell($opt_line_no, $it_array, 'type', 15, 75, xl('Issue Type'));
     echo ctGenCell($opt_line_no, $it_array, 'plural', 15, 75, xl('Plural'));
     // if not english and translating lists then show the translation
@@ -771,7 +765,7 @@ function writeITLine($it_array)
         }
     </style>
     <script type="text/javascript">
-        $(document).ready(function () {
+        $(function () {
             $(".select-dropdown").select2({
                 theme: "bootstrap",
                 <?php require($GLOBALS['srcdir'] . '/js/xl/select2.js.php'); ?>
@@ -1008,7 +1002,7 @@ function writeITLine($it_array)
 
 <body class="body_top">
 <form method='post' name='theform' id='theform' action='edit_list.php'>
-    <input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+    <input type="hidden" name="csrf_token_form" value="<?php echo attr(CsrfUtils::collectCsrfToken()); ?>" />
     <input type="hidden" id="list_from" name="list_from" value="<?php echo attr($list_from);?>"/>
     <input type="hidden" id="list_to" name="list_to" value="<?php echo attr($list_to);?>"/>
     <nav class="navbar navbar-default navbar-fixed-top">
@@ -1094,7 +1088,7 @@ function writeITLine($it_array)
                 <!--Added filter-->
                 <script type="text/javascript">
                     function lister() {
-                        var urlFull   = new URL($(location).attr('href'));
+                        var queryParams = getQueryStringAsObject();
                         var list_from = parseInt($("#list-from").val());
                         var list_to   = parseInt($("#list-to").val());
                         var list_id_container = $("#list_id").val();
@@ -1104,19 +1098,18 @@ function writeITLine($it_array)
                             return false;
                         }
                         if( list_from >= 0 ){
-                            urlFull.searchParams.delete("list_from");
-                            urlFull.searchParams.set("list_from",list_from);
+                            queryParams['list_from'] = list_from;
                         }
 
                         if( list_to >= 0 ){
-                            urlFull.searchParams.delete("list_to");
-                            urlFull.searchParams.set("list_to",list_to);
+                            queryParams['list_to'] = list_to;
                         }
                         if( list_id_container.length > 0 ){
-                            urlFull.searchParams.delete("list_id_container");
-                            urlFull.searchParams.set("list_id_container", list_id_container );
+                            queryParams['list_id_container'] = list_id_container;
                         }
-                        window.location.replace(urlFull);
+                        var urlParts = document.URL.split('?');
+                        var newUrl = urlParts[0] + '?' + $.param(queryParams);
+                        window.location.replace(newUrl);
                     }
                 </script>
                 <?php
@@ -1125,7 +1118,7 @@ function writeITLine($it_array)
                 ?>
                 <div class="blck-filter" style="display: none; float: left; margin-top: 5px; margin-left: 10px; border:0px solid red; width: auto; ">
                     <div id="input-type-from" style="float: left; "><?php echo xlt("From"); ?>&nbsp;<input autocomplete="off" id="list-from" value="<?php echo attr($urlFrom);?>" style = "margin-right: 10px; width: 40px;">
-                        <?php echo xlt("To"); ?>&nbsp;<input autocomplete="off" id="list-to" value="<?php echo attr($urlTo); ?>" style=" margin-right: 10px; width: 40px;">
+                        <?php echo xlt("To{{Range}}"); ?>&nbsp;<input autocomplete="off" id="list-to" value="<?php echo attr($urlTo); ?>" style=" margin-right: 10px; width: 40px;">
                     </div>
                     <div style="float:left" ><input type="button" value="<?php echo xla('Show records'); ?>" onclick="lister()"></div>
                 </div>
@@ -1143,7 +1136,7 @@ function writeITLine($it_array)
             <td><b><?php echo xlt('Option'); ?></b></td>
             <td><b><?php echo xlt('Generates'); ?></b></td>
         <?php elseif ($list_id == 'code_types') : ?>
-            <th><b><?php echo xlt('Active'); ?></b></th>
+            <th><b><?php echo xlt('Active{{Code}}'); ?></b></th>
             <th><b><?php echo xlt('Key'); ?></b></th>
             <th><b><?php echo xlt('ID'); ?></b></th>
             <th><b><?php echo xlt('Label'); ?></b></th>
@@ -1168,9 +1161,9 @@ function writeITLine($it_array)
         <?php elseif ($list_id == 'apptstat' || $list_id == 'groupstat') : ?>
             <th><b><?php echo xlt('ID'); ?></b></th>
             <th><b><?php echo xlt('Title'); ?></b></th>
-            <th><b><?php echo xlt('Order'); ?></b></th>
+            <th><b><?php echo xlt('Order{{Sequence}}'); ?></b></th>
             <th><b><?php echo xlt('Default'); ?></b></th>
-            <th><b><?php echo xlt('Active'); ?></b></th>
+            <th><b><?php echo xlt('Active{{Appointment}}'); ?></b></th>
             <th><b><?php echo xlt('Color'); ?></b></th>
             <th><b><?php echo xlt('Alert Time'); ?></b></th>
             <th><b><?php echo xlt('Check In'); ?>&nbsp;&nbsp;&nbsp;&nbsp;</b>
@@ -1179,8 +1172,8 @@ function writeITLine($it_array)
             <th><b><?php echo xlt('Code(s)'); ?></b></th>
         <?php elseif ($list_id == 'issue_types') : ?>
             <th><b><?php echo xlt('OpenEMR Application Category'); ?></b></th>
-            <th><b><?php echo xlt('Active'); ?></b></th>
-            <th><b><?php echo xlt('Order'); ?></b></th>
+            <th><b><?php echo xlt('Active{{Issue}}'); ?></b></th>
+            <th><b><?php echo xlt('Order{{Sequence}}'); ?></b></th>
             <th><b><?php echo xlt('Type'); ?></b></th>
             <th><b><?php echo xlt('Plural'); ?></b></th>
             <?php //show translation column if not english and the translation lists flag is set
@@ -1208,7 +1201,7 @@ function writeITLine($it_array)
             if ($GLOBALS['translate_lists'] && $_SESSION['language_choice'] > 1) {
                 echo "<th><b>" . xlt('Translation') . "</b><span class='help' title='" . xla('The translated Title that will appear in current language') . "'> (?)</span></th>";
             } ?>
-            <th><b><?php echo xlt('Order'); ?></b></th>
+            <th><b><?php echo xlt('Order{{Sequence}}'); ?></b></th>
             <th><b><?php echo xlt('Default'); ?></b></th>
             <th><b><?php echo xlt('Active'); ?></b></th>
             <?php if ($list_id == 'taxrate') { ?>
@@ -1227,9 +1220,9 @@ function writeITLine($it_array)
                     <b>&nbsp;&nbsp;&nbsp;&nbsp;<?php echo xlt('CVX Code Mapping'); ?></b>
                 </th>
             <?php }
-if ($GLOBALS['ippf_specific']) { ?>
+            if ($GLOBALS['ippf_specific']) { ?>
     <th><b><?php echo xlt('Global ID'); ?></b></th>
-<?php } ?>
+            <?php } ?>
             <th><b><?php
             if ($list_id == 'language') {
                 echo xlt('ISO 639-2 Code');
@@ -1267,7 +1260,7 @@ if ($GLOBALS['ippf_specific']) { ?>
             <?php
             if (preg_match('/_issue_list$/', $list_id)) { ?>
                 <th><b><?php echo xlt('Subtype'); ?></b></th>
-            <?php
+                <?php
             }
         endif; // end not fee sheet ?>
     </tr>
@@ -1378,7 +1371,7 @@ if ($GLOBALS['ippf_specific']) { ?>
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <form action="edit_list.php" method="post" class="form">
-                <input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+                <input type="hidden" name="csrf_token_form" value="<?php echo attr(CsrfUtils::collectCsrfToken()); ?>" />
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal"
                             aria-label="<?php echo xla('Close'); ?>"><i
@@ -1410,8 +1403,9 @@ if ($GLOBALS['ippf_specific']) { ?>
 <script type="text/javascript">
     // jQuery stuff to make the page a little easier to use
 
-    $(document).ready(function () {
-        $("#form_save").click(function () {
+    $(function () {
+        $("#form_save").click(function (e) {
+            e.preventDefault();
             SaveChanges();
         });
         $("#list_id").change(function () {
@@ -1437,8 +1431,12 @@ if ($GLOBALS['ippf_specific']) { ?>
             totalRecordDiv.text("<?php echo xlt("Showing items"); ?>: <?php echo ( $list_to > 0 ? attr($list_from+1). " - ".attr($list_to) : attr($res->_numOfRows) );?> of <?php echo attr($total_rows);?>");
         }
 
-        var urlFull    = new URL($(location).attr('href'));
-        var listIdCont = urlFull.searchParams.get('list_id_container');
+        var queryParams = getQueryStringAsObject();
+        var listIdCont = null;
+        if (typeof queryParams['list_id_container'] !== 'undefined') {
+            listIdCont = queryParams['list_id_container'];
+        }
+
 
         if( totalRecords >= <?php echo attr($records_per_page);?> || listIdCont != null || $("#list_to").val() > 0) {
             $(".blck-filter").show();
@@ -1499,6 +1497,20 @@ if ($GLOBALS['ippf_specific']) { ?>
             }
         };
     });
+
+    function getQueryStringAsObject() {
+
+        var paramsString = document.URL.split('?');
+        var paramsFull = (paramsString.length > 1) ? paramsString[1].split('&') : [];
+        var listIdCont = null;
+        var queryParameter;
+        var resObject = {};
+        for (var i = 0; i < paramsFull.length; i++ ) {
+            queryParameter = paramsFull[i].split('=');
+            resObject[queryParameter[0]] = queryParameter[1];
+        }
+        return resObject;
+    }
 
 </script>
 </html>

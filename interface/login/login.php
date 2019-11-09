@@ -382,7 +382,7 @@ if (isset($_SESSION['loginfailure']) && ($_SESSION['loginfailure'] == 1)) : // B
                 </div>
                 <div class="col-sm-12 text-center">
                     <p class="small">
-                        <a href="../../acknowledge_license_cert.html" target="main"><?php echo xlt('Acknowledgments, Licensing and Certification'); ?></a>
+                        <a href="../../acknowledge_license_cert.html" target="main"><?php echo xlt('Acknowledgments, Licensing and Certification, dh version'); ?></a>
                     </p>
                 </div>
                 <div class="product-registration-modal" style="display: none">

@@ -335,7 +335,7 @@ if (!$_REQUEST['flb_table']) {
                                 $select_provs .= "    <option value='" . attr($provid) . "'";
                                 //dh 11/11/2018 adding acl check here
 
-                                if (isset($_POST['form_provider']) && $provid == $_POST['form_provider'] && acl_check('patients', 'p_list')) {
+                                if (isset($_POST['form_provider']) && $provid == $_POST['form_provider'] && !acl_check('patients', 'p_list')) {
                                     $select_provs .= " selected";
                                 } elseif (!isset($_POST['form_provider']) && $_SESSION['userauthorized'] && $provid == $_SESSION['authUserID']) {
                                     $select_provs .= " selected";
